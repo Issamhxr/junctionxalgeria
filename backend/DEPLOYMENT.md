@@ -40,12 +40,6 @@ DB_PASSWORD=your_password
 JWT_SECRET=your_super_secret_jwt_key_change_in_production
 JWT_EXPIRES_IN=7d
 
-# Email (Optional)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-
 # SMS (Optional)
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
@@ -317,10 +311,6 @@ heroku run npm run migrate
 
 ### Optional Variables
 
-- `EMAIL_HOST`: SMTP host for email alerts
-- `EMAIL_PORT`: SMTP port
-- `EMAIL_USER`: Email username
-- `EMAIL_PASS`: Email password
 - `TWILIO_ACCOUNT_SID`: Twilio account SID
 - `TWILIO_AUTH_TOKEN`: Twilio auth token
 - `TWILIO_PHONE_NUMBER`: Twilio phone number

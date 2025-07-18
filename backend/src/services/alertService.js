@@ -1,4 +1,3 @@
-const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const cron = require('node-cron');
 const logger = require('../utils/logger');
@@ -7,7 +6,6 @@ class AlertService {
   constructor() {
     this.io = null;
     this.prisma = null;
-    this.emailTransporter = null;
     this.twilioClient = null;
     this.isInitialized = false;
   }
@@ -15,27 +13,6 @@ class AlertService {
   async initialize(io, prisma) {
     this.io = io;
     this.prisma = prisma;
-
-    // Initialize email transporter
-    if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      this.emailTransporter = nodemailer.createTransporter({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT || 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
-
-      try {
-        await this.emailTransporter.verify();
-        logger.info('Email service initialized successfully');
-      } catch (error) {
-        logger.warn('Email service initialization failed:', error.message);
-        this.emailTransporter = null;
-      }
-    }
 
     // Initialize Twilio client
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
@@ -253,15 +230,6 @@ class AlertService {
 
       if (alertSeverityIndex < userSeverityIndex) continue;
 
-      // Send email notification
-      if (preferences.emailAlerts && this.emailTransporter) {
-        try {
-          await this.sendEmail(user.email, alert);
-        } catch (error) {
-          logger.error(`Email notification failed for ${user.email}:`, error);
-        }
-      }
-
       // Send SMS notification
       if (preferences.smsAlerts && this.twilioClient && user.phone) {
         try {
@@ -271,44 +239,6 @@ class AlertService {
         }
       }
     }
-  }
-
-  async sendEmail(email, alert) {
-    if (!this.emailTransporter) return;
-
-    const subject = `🚨 Alert: ${alert.severity} - ${alert.pond.name}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: ${this.getSeverityColor(alert.severity)};">
-          ${alert.severity} Alert
-        </h2>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>${alert.pond.name}</h3>
-          <p><strong>Farm:</strong> ${alert.farm.name}</p>
-          <p><strong>Alert Type:</strong> ${alert.type.replace('_', ' ')}</p>
-          <p><strong>Message:</strong> ${alert.message}</p>
-          ${alert.parameter ? `<p><strong>Parameter:</strong> ${alert.parameter}</p>` : ''}
-          ${alert.value ? `<p><strong>Current Value:</strong> ${alert.value}</p>` : ''}
-          ${alert.threshold ? `<p><strong>Threshold:</strong> ${alert.threshold}</p>` : ''}
-          <p><strong>Time:</strong> ${new Date(alert.createdAt).toLocaleString()}</p>
-        </div>
-        
-        <p style="color: #666; font-size: 14px;">
-          This is an automated alert from your Aquaculture Monitoring System.
-          Please check your dashboard for more details.
-        </p>
-      </div>
-    `;
-
-    await this.emailTransporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html,
-    });
-
-    logger.info(`Email alert sent to ${email}`);
   }
 
   async sendSMS(phone, alert) {

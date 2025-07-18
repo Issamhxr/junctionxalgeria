@@ -20,7 +20,7 @@ The backend for **Challenge 4: Digitizing Aquaculture in Algeria** has been succ
 - **Farm & Pond Management** - Complete CRUD operations
 - **Sensor Data Collection** - Real-time data ingestion and storage
 - **Intelligent Alert System** - Automated threshold monitoring
-- **Email & SMS Notifications** - Using Nodemailer and Twilio
+- **SMS Notifications** - Using Twilio for SMS alerts
 - **Dashboard Analytics** - Statistical data for decision making
 - **Data Simulation** - Built-in service for testing/demo
 - **Security** - Rate limiting, input validation, SQL injection prevention

@@ -10,11 +10,11 @@ export default function Page() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter(); //bkhb
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, loading, router]);
+  // useEffect(() => {
+  //   if (!loading && !isAuthenticated) {
+  //     router.push("/login");
+  //   }
+  // }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return (

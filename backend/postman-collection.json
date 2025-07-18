@@ -1,0 +1,512 @@
+{
+	"info": {
+		"_postman_id": "a7b5c8d9-e1f2-4a5b-8c9d-1e2f3a4b5c6d",
+		"name": "JunctionX Algeria - Aquaculture API",
+		"description": "Complete API collection for the smart aquaculture management system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', jsonData.data.token);",
+									"    pm.test('Token saved', function () {",
+									"        pm.expect(jsonData.data.token).to.be.a('string');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@aquaculture.dz\",\n  \"password\": \"demo123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"test@aquaculture.dz\",\n  \"password\": \"password123\",\n  \"role\": \"FARMER\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏊 Ponds Management",
+			"item": [
+				{
+					"name": "Get All Ponds",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ponds",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ponds"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Pond by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ponds/pond_id_here",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ponds",
+								"pond_id_here"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Pond",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"farmId\": \"farm_id_here\",\n  \"name\": \"Test Pond\",\n  \"description\": \"Test pond for API testing\",\n  \"type\": \"FRESHWATER\",\n  \"length\": 20.0,\n  \"width\": 15.0,\n  \"depth\": 2.5,\n  \"fishSpecies\": \"Tilapia\",\n  \"fishCount\": 1000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ponds",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ponds"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Sensor Data",
+			"item": [
+				{
+					"name": "Get Sensor Data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/sensors/data/pond_id_here?limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sensors",
+								"data",
+								"pond_id_here"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Sensor Reading",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pondId\": \"pond_id_here\",\n  \"temperature\": 24.5,\n  \"phLevel\": 7.2,\n  \"dissolvedOxygen\": 8.5,\n  \"turbidity\": 15.2,\n  \"ammoniaLevel\": 0.3,\n  \"nitriteLevel\": 0.1,\n  \"nitrateLevel\": 12.0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/sensors/data",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sensors",
+								"data"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Latest Reading",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/sensors/latest/pond_id_here",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sensors",
+								"latest",
+								"pond_id_here"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Sensor Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/sensors/stats/pond_id_here?period=24h",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sensors",
+								"stats",
+								"pond_id_here"
+							],
+							"query": [
+								{
+									"key": "period",
+									"value": "24h"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚨 Alerts Management",
+			"item": [
+				{
+					"name": "Get All Alerts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/alerts?page=1&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"alerts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Active Alerts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/alerts/active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"alerts",
+								"active"
+							]
+						}
+					}
+				},
+				{
+					"name": "Acknowledge Alert",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/alerts/acknowledge/alert_id_here",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"alerts",
+								"acknowledge",
+								"alert_id_here"
+							]
+						}
+					}
+				},
+				{
+					"name": "Resolve Alert",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/alerts/resolve/alert_id_here",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"alerts",
+								"resolve",
+								"alert_id_here"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Alert Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/alerts/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"alerts",
+								"stats"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📈 Dashboard",
+			"item": [
+				{
+					"name": "Dashboard Overview",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard/overview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard",
+								"overview"
+							]
+						}
+					}
+				},
+				{
+					"name": "Pond Analytics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard/analytics/pond_id_here?period=7d",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard",
+								"analytics",
+								"pond_id_here"
+							],
+							"query": [
+								{
+									"key": "period",
+									"value": "7d"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Farms Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard/farms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard",
+								"farms"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 User Management",
+			"item": [
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/user_id_here",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"user_id_here"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update User Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"FARMER\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/user_id_here/role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"user_id_here",
+								"role"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

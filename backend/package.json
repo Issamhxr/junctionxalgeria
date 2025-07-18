@@ -1,0 +1,65 @@
+{
+  "name": "aquaculture-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Smart Aquaculture Management System - JunctionX Algeria Challenge 4",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio"
+  },
+  "keywords": [
+    "aquaculture",
+    "fish-farming",
+    "iot",
+    "sensors",
+    "algeria",
+    "junctionx"
+  ],
+  "author": "Your Team Name",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.7",
+    "socket.io": "^4.7.4",
+    "twilio": "^4.19.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "prisma": "^5.22.0",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 10000,
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/app.js",
+      "!src/database/seed.js"
+    ]
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

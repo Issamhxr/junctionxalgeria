@@ -1,0 +1,404 @@
+-- ========================================
+-- JunctionX Algeria Challenge 4: Aquaculture Database Schema
+-- Smart and Responsive Management of Fish Ponds
+-- ========================================
+
+-- Create extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+CREATE EXTENSION IF NOT EXISTS "btree_gin";
+
+-- Set timezone
+SET timezone = 'UTC';
+
+-- ========================================
+-- ENUMS
+-- ========================================
+
+-- User roles
+CREATE TYPE USER_ROLE AS
+    ENUM ('ADMIN', 'FARMER', 'TECHNICIAN', 'VIEWER');
+ 
+    -- User status
+    CREATE TYPE USER_STATUS AS
+        ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+ 
+        -- Pond types
+        CREATE TYPE POND_TYPE AS
+            ENUM ('FRESHWATER', 'SALTWATER', 'BRACKISH');
+ 
+            -- Alert types
+            CREATE TYPE ALERT_TYPE AS
+                ENUM ('THRESHOLD_EXCEEDED', 'SENSOR_MALFUNCTION', 'SYSTEM_ERROR', 'MAINTENANCE_DUE', 'FISH_HEALTH', 'WATER_QUALITY');
+ 
+                -- Alert severity
+                CREATE TYPE ALERT_SEVERITY AS
+                    ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+ 
+                    -- Notification types
+                    CREATE TYPE NOTIFICATION_TYPE AS
+                        ENUM ('EMAIL', 'SMS', 'PUSH', 'IN_APP');
+ 
+                        -- Farm user roles
+                        CREATE TYPE FARM_USER_ROLE AS
+                            ENUM ('owner', 'manager', 'worker', 'viewer');
+ 
+                            -- ========================================
+                            -- TABLES
+                            -- ========================================
+                            -- Users table
+                            CREATE TABLE USERS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), EMAIL VARCHAR(255) UNIQUE NOT NULL, PASSWORD_HASH VARCHAR(255) NOT NULL, FIRST_NAME VARCHAR(100) NOT NULL, LAST_NAME VARCHAR(100) NOT NULL, PHONE VARCHAR(20), ROLE USER_ROLE NOT NULL DEFAULT 'VIEWER', STATUS USER_STATUS NOT NULL DEFAULT 'ACTIVE', LANGUAGE VARCHAR(5) DEFAULT 'en', LAST_LOGIN TIMESTAMP, EMAIL_VERIFIED BOOLEAN DEFAULT FALSE, PHONE_VERIFIED BOOLEAN DEFAULT FALSE, CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- Farms table
+                            CREATE TABLE FARMS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), NAME VARCHAR(255) NOT NULL, DESCRIPTION TEXT, LOCATION VARCHAR(500), LATITUDE DECIMAL(10, 8), LONGITUDE DECIMAL(11, 8), AREA DECIMAL(10, 2), -- in hectares
+                            ESTABLISHED_DATE DATE, LICENSE_NUMBER VARCHAR(100), CONTACT_EMAIL VARCHAR(255), CONTACT_PHONE VARCHAR(20), CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- Farm users relationship
+                            CREATE TABLE FARM_USERS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), FARM_ID UUID REFERENCES FARMS(ID) ON DELETE CASCADE, USER_ID UUID REFERENCES USERS(ID) ON DELETE CASCADE, ROLE FARM_USER_ROLE NOT NULL DEFAULT 'viewer', ASSIGNED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, ASSIGNED_BY UUID REFERENCES USERS(ID), UNIQUE(FARM_ID, USER_ID) );
+ 
+                            -- Ponds table
+                            CREATE TABLE PONDS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), FARM_ID UUID REFERENCES FARMS(ID) ON DELETE CASCADE, NAME VARCHAR(255) NOT NULL, DESCRIPTION TEXT, TYPE POND_TYPE NOT NULL DEFAULT 'FRESHWATER', LENGTH DECIMAL(8, 2), -- in meters
+                            WIDTH DECIMAL(8, 2), -- in meters
+                            DEPTH DECIMAL(8, 2), -- in meters
+                            VOLUME DECIMAL(12, 2), -- in liters
+                            FISH_SPECIES VARCHAR(255), FISH_COUNT INTEGER DEFAULT 0, STOCKING_DENSITY DECIMAL(8, 2), -- fish per cubic meter
+                            FEEDING_SCHEDULE TEXT, IS_ACTIVE BOOLEAN DEFAULT TRUE, CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- Sensor data table
+                            CREATE TABLE SENSOR_DATA ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), POND_ID UUID REFERENCES PONDS(ID) ON DELETE CASCADE, TEMPERATURE DECIMAL(5, 2), -- Celsius
+                            PH_LEVEL DECIMAL(4, 2), -- pH scale
+                            DISSOLVED_OXYGEN DECIMAL(5, 2), -- mg/L
+                            TURBIDITY DECIMAL(6, 2), -- NTU
+                            AMMONIA_LEVEL DECIMAL(6, 3), -- mg/L
+                            NITRITE_LEVEL DECIMAL(6, 3), -- mg/L
+                            NITRATE_LEVEL DECIMAL(6, 3), -- mg/L
+                            SALINITY DECIMAL(5, 2), -- ppt
+                            WATER_LEVEL DECIMAL(5, 2), -- meters
+                            FLOW_RATE DECIMAL(8, 2), -- L/min
+                            CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- Thresholds table
+                            CREATE TABLE THRESHOLDS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), POND_ID UUID REFERENCES PONDS(ID) ON DELETE CASCADE, PARAMETER VARCHAR(50) NOT NULL, -- temperature, ph_level, etc.
+                            MIN_VALUE DECIMAL(10, 3), MAX_VALUE DECIMAL(10, 3), OPTIMAL_MIN DECIMAL(10, 3), OPTIMAL_MAX DECIMAL(10, 3), IS_ACTIVE BOOLEAN DEFAULT TRUE, CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(POND_ID, PARAMETER) );
+ 
+                            -- Alerts table
+                            CREATE TABLE ALERTS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), FARM_ID UUID REFERENCES FARMS(ID) ON DELETE CASCADE, POND_ID UUID REFERENCES PONDS(ID) ON DELETE CASCADE, USER_ID UUID REFERENCES USERS(ID) ON DELETE SET NULL, TYPE ALERT_TYPE NOT NULL, SEVERITY ALERT_SEVERITY NOT NULL DEFAULT 'LOW', TITLE VARCHAR(255) NOT NULL, MESSAGE TEXT NOT NULL, PARAMETER VARCHAR(50), -- which parameter triggered the alert
+                            CURRENT_VALUE DECIMAL(10, 3), -- current value of the parameter
+                            THRESHOLD_VALUE DECIMAL(10, 3), -- threshold value that was exceeded
+                            IS_READ BOOLEAN DEFAULT FALSE, IS_RESOLVED BOOLEAN DEFAULT FALSE, RESOLVED_AT TIMESTAMP, RESOLVED_BY UUID REFERENCES USERS(ID), CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- User preferences table
+                            CREATE TABLE USER_PREFERENCES ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), USER_ID UUID REFERENCES USERS(ID) ON DELETE CASCADE UNIQUE, EMAIL_NOTIFICATIONS BOOLEAN DEFAULT TRUE, SMS_NOTIFICATIONS BOOLEAN DEFAULT FALSE, PUSH_NOTIFICATIONS BOOLEAN DEFAULT TRUE, ALERT_FREQUENCY INTEGER DEFAULT 30, -- minutes
+                            LANGUAGE VARCHAR(5) DEFAULT 'en', TIMEZONE VARCHAR(50) DEFAULT 'UTC', DASHBOARD_LAYOUT JSONB, NOTIFICATION_TYPES JSONB DEFAULT '["THRESHOLD_EXCEEDED", "SYSTEM_ERROR", "MAINTENANCE_DUE"]', CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- Activity logs table
+                            CREATE TABLE ACTIVITY_LOGS ( ID UUID PRIMARY KEY DEFAULT UUID_GENERATE_V4(), USER_ID UUID REFERENCES USERS(ID) ON DELETE SET NULL, ACTION VARCHAR(100) NOT NULL, ENTITY VARCHAR(50) NOT NULL, -- users, ponds, alerts, etc.
+                            ENTITY_ID UUID, DETAILS JSONB, IP_ADDRESS INET, USER_AGENT TEXT, CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+ 
+                            -- ========================================
+                            -- INDEXES FOR PERFORMANCE
+                            -- ========================================
+                            -- Users indexes
+                            CREATE INDEX IDX_USERS_EMAIL ON USERS(EMAIL);
+                            CREATE INDEX IDX_USERS_ROLE ON USERS(ROLE);
+                            CREATE INDEX IDX_USERS_STATUS ON USERS(STATUS);
+                            CREATE INDEX IDX_USERS_CREATED_AT ON USERS(CREATED_AT);
+ 
+                            -- Farms indexes
+                            CREATE INDEX IDX_FARMS_LOCATION ON FARMS USING GIN(TO_TSVECTOR('english', LOCATION));
+                            CREATE INDEX IDX_FARMS_NAME ON FARMS USING GIN(TO_TSVECTOR('english', NAME));
+ 
+                            -- Farm users indexes
+                            CREATE INDEX IDX_FARM_USERS_FARM_ID ON FARM_USERS(FARM_ID);
+                            CREATE INDEX IDX_FARM_USERS_USER_ID ON FARM_USERS(USER_ID);
+                            CREATE INDEX IDX_FARM_USERS_ROLE ON FARM_USERS(ROLE);
+ 
+                            -- Ponds indexes
+                            CREATE INDEX IDX_PONDS_FARM_ID ON PONDS(FARM_ID);
+                            CREATE INDEX IDX_PONDS_TYPE ON PONDS(TYPE);
+                            CREATE INDEX IDX_PONDS_IS_ACTIVE ON PONDS(IS_ACTIVE);
+                            CREATE INDEX IDX_PONDS_FISH_SPECIES ON PONDS(FISH_SPECIES);
+ 
+                            -- Sensor data indexes (critical for time-series queries)
+                            CREATE INDEX IDX_SENSOR_DATA_POND_ID ON SENSOR_DATA(POND_ID);
+                            CREATE INDEX IDX_SENSOR_DATA_CREATED_AT ON SENSOR_DATA(CREATED_AT DESC);
+                            CREATE INDEX IDX_SENSOR_DATA_POND_TIME ON SENSOR_DATA(POND_ID, CREATED_AT DESC);
+                            CREATE INDEX IDX_SENSOR_DATA_TEMPERATURE ON SENSOR_DATA(TEMPERATURE);
+                            CREATE INDEX IDX_SENSOR_DATA_PH ON SENSOR_DATA(PH_LEVEL);
+                            CREATE INDEX IDX_SENSOR_DATA_OXYGEN ON SENSOR_DATA(DISSOLVED_OXYGEN);
+ 
+                            -- Thresholds indexes
+                            CREATE INDEX IDX_THRESHOLDS_POND_ID ON THRESHOLDS(POND_ID);
+                            CREATE INDEX IDX_THRESHOLDS_PARAMETER ON THRESHOLDS(PARAMETER);
+                            CREATE INDEX IDX_THRESHOLDS_ACTIVE ON THRESHOLDS(IS_ACTIVE);
+ 
+                            -- Alerts indexes
+                            CREATE INDEX IDX_ALERTS_FARM_ID ON ALERTS(FARM_ID);
+                            CREATE INDEX IDX_ALERTS_POND_ID ON ALERTS(POND_ID);
+                            CREATE INDEX IDX_ALERTS_USER_ID ON ALERTS(USER_ID);
+                            CREATE INDEX IDX_ALERTS_TYPE ON ALERTS(TYPE);
+                            CREATE INDEX IDX_ALERTS_SEVERITY ON ALERTS(SEVERITY);
+                            CREATE INDEX IDX_ALERTS_IS_READ ON ALERTS(IS_READ);
+                            CREATE INDEX IDX_ALERTS_IS_RESOLVED ON ALERTS(IS_RESOLVED);
+                            CREATE INDEX IDX_ALERTS_CREATED_AT ON ALERTS(CREATED_AT DESC);
+                            CREATE INDEX IDX_ALERTS_UNRESOLVED ON ALERTS(FARM_ID, IS_RESOLVED, CREATED_AT DESC) WHERE IS_RESOLVED = FALSE;
+ 
+                            -- Activity logs indexes
+                            CREATE INDEX IDX_ACTIVITY_LOGS_USER_ID ON ACTIVITY_LOGS(USER_ID);
+                            CREATE INDEX IDX_ACTIVITY_LOGS_ACTION ON ACTIVITY_LOGS(ACTION);
+                            CREATE INDEX IDX_ACTIVITY_LOGS_ENTITY ON ACTIVITY_LOGS(ENTITY, ENTITY_ID);
+                            CREATE INDEX IDX_ACTIVITY_LOGS_CREATED_AT ON ACTIVITY_LOGS(CREATED_AT DESC);
+ 
+                            -- ========================================
+                            -- TRIGGERS FOR UPDATED_AT
+                            -- ========================================
+                            -- Function to update updated_at timestamp
+                            CREATE OR REPLACE FUNCTION UPDATE_UPDATED_AT_COLUMN() RETURNS TRIGGER AS
+                                $$
+                                BEGIN
+                                    NEW.UPDATED_AT = CURRENT_TIMESTAMP;
+                                    RETURN NEW;
+                                END;
+
+                                $$ LANGUAGE 'plpgsql';
+ 
+                                -- Apply triggers to tables with updated_at
+                                CREATE TRIGGER UPDATE_USERS_UPDATED_AT BEFORE
+                                UPDATE ON USERS FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT_COLUMN(
+                                );
+                                CREATE TRIGGER UPDATE_FARMS_UPDATED_AT BEFORE
+                                UPDATE ON FARMS FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT_COLUMN(
+                                );
+                                CREATE TRIGGER UPDATE_PONDS_UPDATED_AT BEFORE
+                                UPDATE ON PONDS FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT_COLUMN(
+                                );
+                                CREATE TRIGGER UPDATE_THRESHOLDS_UPDATED_AT BEFORE
+                                UPDATE ON THRESHOLDS FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT_COLUMN(
+                                );
+                                CREATE TRIGGER UPDATE_USER_PREFERENCES_UPDATED_AT BEFORE
+                                UPDATE ON USER_PREFERENCES FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT_COLUMN(
+                                );
+ 
+                                -- ========================================
+                                -- FUNCTIONS FOR ANALYTICS
+                                -- ========================================
+                                -- Function to get latest sensor reading for a pond
+                                CREATE OR REPLACE FUNCTION GET_LATEST_SENSOR_DATA(POND_UUID UUID) RETURNS TABLE ( TEMPERATURE DECIMAL(5, 2), PH_LEVEL DECIMAL(4, 2), DISSOLVED_OXYGEN DECIMAL(5, 2), TURBIDITY DECIMAL(6, 2), AMMONIA_LEVEL DECIMAL(6, 3), READING_TIME TIMESTAMP ) AS
+                                    $$
+                                    BEGIN
+                                        RETURN QUERY SELECT S.TEMPERATURE, S.PH_LEVEL, S.DISSOLVED_OXYGEN, S.TURBIDITY, S.AMMONIA_LEVEL, S.CREATED_AT FROM SENSOR_DATA S WHERE S.POND_ID = POND_UUID ORDER BY S.CREATED_AT DESC LIMIT 1;
+                                    END;
+
+                                    $$ LANGUAGE PLPGSQL;
+ 
+                                    -- Function to check threshold violations
+                                    CREATE OR REPLACE FUNCTION CHECK_THRESHOLD_VIOLATIONS(POND_UUID UUID, PARAM_NAME VARCHAR, CURRENT_VAL DECIMAL) RETURNS BOOLEAN AS
+                                        $$
+                                        DECLARE
+                                            THRESHOLD_RECORD RECORD;
+                                        BEGIN
+                                            SELECT
+                                                MIN_VALUE,
+                                                MAX_VALUE INTO THRESHOLD_RECORD
+                                            FROM
+                                                THRESHOLDS
+                                            WHERE
+                                                POND_ID = POND_UUID
+                                                AND PARAMETER = PARAM_NAME
+                                                AND IS_ACTIVE = TRUE;
+                                            IF THRESHOLD_RECORD IS NULL THEN
+                                                RETURN FALSE;
+                                            END IF;
+
+                                            RETURN (CURRENT_VAL < THRESHOLD_RECORD.MIN_VALUE
+                                            OR CURRENT_VAL > THRESHOLD_RECORD.MAX_VALUE);
+                                        END;
+
+                                        $$ LANGUAGE PLPGSQL;
+ 
+                                        -- ========================================
+                                        -- DEFAULT THRESHOLDS DATA
+                                        -- ========================================
+                                        -- Function to create default thresholds for a pond
+                                        CREATE OR REPLACE FUNCTION CREATE_DEFAULT_THRESHOLDS(POND_UUID UUID) RETURNS VOID AS
+                                            $$
+                                            BEGIN
+                                                INSERT INTO THRESHOLDS (
+                                                    POND_ID,
+                                                    PARAMETER,
+                                                    MIN_VALUE,
+                                                    MAX_VALUE,
+                                                    OPTIMAL_MIN,
+                                                    OPTIMAL_MAX
+                                                ) VALUES (
+                                                    POND_UUID,
+                                                    'temperature',
+                                                    18.0,
+                                                    30.0,
+                                                    22.0,
+                                                    26.0
+                                                ), (
+                                                    POND_UUID,
+                                                    'ph_level',
+                                                    6.5,
+                                                    8.5,
+                                                    7.0,
+                                                    8.0
+                                                ), (
+                                                    POND_UUID,
+                                                    'dissolved_oxygen',
+                                                    5.0,
+                                                    15.0,
+                                                    6.0,
+                                                    10.0
+                                                ), (
+                                                    POND_UUID,
+                                                    'turbidity',
+                                                    0.0,
+                                                    50.0,
+                                                    0.0,
+                                                    20.0
+                                                ), (
+                                                    POND_UUID,
+                                                    'ammonia_level',
+                                                    0.0,
+                                                    2.0,
+                                                    0.0,
+                                                    0.5
+                                                ), (
+                                                    POND_UUID,
+                                                    'nitrite_level',
+                                                    0.0,
+                                                    1.0,
+                                                    0.0,
+                                                    0.2
+                                                ), (
+                                                    POND_UUID,
+                                                    'nitrate_level',
+                                                    0.0,
+                                                    40.0,
+                                                    0.0,
+                                                    20.0
+                                                );
+                                            END;
+
+                                            $$ LANGUAGE PLPGSQL;
+ 
+                                            -- ========================================
+                                            -- SAMPLE DATA FOR TESTING
+                                            -- ========================================
+                                            -- Insert admin user
+                                            INSERT INTO USERS (
+                                                ID,
+                                                EMAIL,
+                                                PASSWORD_HASH,
+                                                FIRST_NAME,
+                                                LAST_NAME,
+                                                ROLE,
+                                                STATUS,
+                                                EMAIL_VERIFIED
+                                            ) VALUES (
+                                                '550e8400-e29b-41d4-a716-446655440000',
+                                                'admin@aquaculture.dz',
+                                                '$2b$10$rQZ9vHJf5J0J5VGXzKGJZ.XYLHv6mXzBfBfYvWvJcQzVdGzJ5VZB6',
+                                                'Admin',
+                                                'User',
+                                                'ADMIN',
+                                                'ACTIVE',
+                                                TRUE
+                                            );
+ 
+                                            -- Insert sample farm
+                                            INSERT INTO FARMS (
+                                                ID,
+                                                NAME,
+                                                DESCRIPTION,
+                                                LOCATION,
+                                                LATITUDE,
+                                                LONGITUDE,
+                                                AREA,
+                                                CONTACT_EMAIL
+                                            ) VALUES (
+                                                '660e8400-e29b-41d4-a716-446655440000',
+                                                'Ferme Aquacole El Bahia',
+                                                'Modern aquaculture farm specializing in sea bass and sea bream production',
+                                                'Tipaza, Algeria',
+                                                36.5931,
+                                                2.4458,
+                                                15.5,
+                                                'contact@ferme-elbahia.dz'
+                                            );
+ 
+                                            -- Insert farm-user relationship
+                                            INSERT INTO FARM_USERS (
+                                                FARM_ID,
+                                                USER_ID,
+                                                ROLE,
+                                                ASSIGNED_BY
+                                            ) VALUES (
+                                                '660e8400-e29b-41d4-a716-446655440000',
+                                                '550e8400-e29b-41d4-a716-446655440000',
+                                                'owner',
+                                                '550e8400-e29b-41d4-a716-446655440000'
+                                            );
+ 
+                                            -- Insert sample pond
+                                            INSERT INTO PONDS (
+                                                ID,
+                                                FARM_ID,
+                                                NAME,
+                                                DESCRIPTION,
+                                                TYPE,
+                                                LENGTH,
+                                                WIDTH,
+                                                DEPTH,
+                                                VOLUME,
+                                                FISH_SPECIES,
+                                                FISH_COUNT
+                                            ) VALUES (
+                                                '770e8400-e29b-41d4-a716-446655440000',
+                                                '660e8400-e29b-41d4-a716-446655440000',
+                                                'Bassin Principal A1',
+                                                'Main production pond for sea bass',
+                                                'SALTWATER',
+                                                50.0,
+                                                25.0,
+                                                3.0,
+                                                3750000,
+                                                'Sea Bass (Dicentrarchus labrax)',
+                                                2500
+                                            );
+ 
+                                            -- Create default thresholds for the sample pond
+                                            SELECT
+                                                CREATE_DEFAULT_THRESHOLDS('770e8400-e29b-41d4-a716-446655440000');
+ 
+                                            -- Insert user preferences for admin
+                                            INSERT INTO USER_PREFERENCES (
+                                                USER_ID,
+                                                EMAIL_NOTIFICATIONS,
+                                                SMS_NOTIFICATIONS,
+                                                LANGUAGE
+                                            ) VALUES (
+                                                '550e8400-e29b-41d4-a716-446655440000',
+                                                TRUE,
+                                                TRUE,
+                                                'en'
+                                            );
+ 
+                                            -- ========================================
+                                            -- GRANT PERMISSIONS
+                                            -- ========================================
+                                            -- Grant necessary permissions
+                                            GRANT ALL ON SCHEMA PUBLIC TO POSTGRES;
+                                            GRANT ALL ON ALL TABLES IN SCHEMA PUBLIC TO POSTGRES;
+                                            GRANT ALL ON ALL SEQUENCES IN SCHEMA PUBLIC TO POSTGRES;
+                                            GRANT ALL ON ALL FUNCTIONS IN SCHEMA PUBLIC TO POSTGRES;
+ 
+                                            -- ========================================
+                                            -- COMPLETION MESSAGE
+                                            -- ========================================
+                                            SELECT
+                                                'JunctionX Algeria Aquaculture Database Schema Created Successfully! 🐟🇩🇿' AS STATUS;

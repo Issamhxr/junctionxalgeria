@@ -32,7 +32,9 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-
+      console.log("API Request:", {
+        url,
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -132,8 +134,8 @@ class ApiClient {
   async markAlertAsRead(alertId: string) {
     return this.request<{
       success: boolean;
-    }>(`/api/alerts/${alertId}/read`, {
-      method: "PUT",
+    }>(`/api/alerts/acknowledge/${alertId}`, {
+      method: "POST",
     });
   }
 

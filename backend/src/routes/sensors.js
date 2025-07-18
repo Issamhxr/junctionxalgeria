@@ -1,7 +1,6 @@
 const express = require("express");
 const { body, validationResult, param, query } = require("express-validator");
 const { auth, authorize } = require("../middleware/auth");
-const { query: dbQuery } = require("../database/connection");
 const logger = require("../utils/logger");
 
 const router = express.Router();
@@ -15,7 +14,7 @@ router.use(auth);
 router.get(
   "/data/:pondId",
   [
-    param("pondId").isUUID().withMessage("Pond ID must be a valid UUID"),
+    param("pondId").isString().withMessage("Pond ID must be a string"),
     query("startDate")
       .optional()
       .isISO8601()
@@ -42,79 +41,61 @@ router.get(
 
       const { pondId } = req.params;
       const { startDate, endDate, limit = 100 } = req.query;
+      const prisma = req.app.get("prisma");
 
       // Check if user has access to this pond
-      const accessQuery = `
-      SELECT p.ID, p.NAME, p.TYPE
-      FROM PONDS p
-      JOIN FARMS f ON p.FARM_ID = f.ID
-      JOIN FARM_USERS fu ON f.ID = fu.FARM_ID
-      WHERE p.ID = $1 AND fu.USER_ID = $2 AND p.IS_ACTIVE = true
-    `;
-      const accessResult = await dbQuery(accessQuery, [
-        pondId,
-        req.user.userId,
-      ]);
+      const pond = await prisma.pond.findFirst({
+        where: {
+          id: pondId,
+          isActive: true,
+          farm: {
+            users: {
+              some: {
+                userId: req.user.userId,
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      });
 
-      if (accessResult.rows.length === 0) {
+      if (!pond) {
         return res.status(404).json({
           success: false,
           message: "Pond not found or access denied",
         });
       }
 
-      const pond = accessResult.rows[0];
-
       // Build date filter
-      let dateFilter = "";
-      let queryParams = [pondId];
-      let paramIndex = 2;
-
+      const dateFilter = {};
       if (startDate) {
-        dateFilter += ` AND CREATED_AT >= $${paramIndex}`;
-        queryParams.push(startDate);
-        paramIndex++;
+        dateFilter.gte = new Date(startDate);
       }
-
       if (endDate) {
-        dateFilter += ` AND CREATED_AT <= $${paramIndex}`;
-        queryParams.push(endDate);
-        paramIndex++;
+        dateFilter.lte = new Date(endDate);
       }
 
-      // Get sensor data
-      const sensorDataQuery = `
-      SELECT 
-        ID,
-        TEMPERATURE,
-        PH_LEVEL,
-        DISSOLVED_OXYGEN,
-        TURBIDITY,
-        AMMONIA_LEVEL,
-        NITRITE_LEVEL,
-        NITRATE_LEVEL,
-        SALINITY,
-        WATER_LEVEL,
-        FLOW_RATE,
-        CREATED_AT
-      FROM SENSOR_DATA
-      WHERE POND_ID = $1 ${dateFilter}
-      ORDER BY CREATED_AT DESC
-      LIMIT $${paramIndex}
-    `;
-      queryParams.push(parseInt(limit));
-
-      const sensorDataResult = await dbQuery(sensorDataQuery, queryParams);
+      // Get sensor data with Prisma
+      const sensorData = await prisma.sensorData.findMany({
+        where: {
+          pondId,
+          ...(Object.keys(dateFilter).length > 0 && { timestamp: dateFilter }),
+        },
+        orderBy: {
+          timestamp: "desc",
+        },
+        take: parseInt(limit),
+      });
 
       res.json({
         success: true,
         data: {
-          sensorData: sensorDataResult.rows,
-          pond: {
-            id: pond.id,
-            name: pond.name,
-            type: pond.type,
-          },
+          sensorData,
+          pond,
         },
       });
     } catch (error) {
@@ -136,14 +117,17 @@ router.post(
   "/data",
   [
     authorize("TECHNICIAN", "FARMER", "ADMIN"),
-    body("pondId").isUUID().withMessage("Pond ID must be a valid UUID"),
+    body("pondId").isString().withMessage("Pond ID must be a string"),
     body("temperature")
+      .optional()
       .isFloat({ min: -10, max: 50 })
       .withMessage("Temperature must be between -10 and 50°C"),
-    body("ph_level")
+    body("ph")
+      .optional()
       .isFloat({ min: 0, max: 14 })
       .withMessage("pH must be between 0 and 14"),
-    body("dissolved_oxygen")
+    body("oxygen")
+      .optional()
       .isFloat({ min: 0, max: 20 })
       .withMessage("Oxygen level must be between 0 and 20 mg/L"),
     body("salinity")
@@ -154,23 +138,23 @@ router.post(
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Turbidity must be a positive number"),
-    body("ammonia_level")
+    body("ammonia")
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Ammonia must be a positive number"),
-    body("nitrite_level")
+    body("nitrite")
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Nitrite must be a positive number"),
-    body("nitrate_level")
+    body("nitrate")
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Nitrate must be a positive number"),
-    body("water_level")
+    body("waterLevel")
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Water level must be a positive number"),
-    body("flow_rate")
+    body("flowRate")
       .optional()
       .isFloat({ min: 0 })
       .withMessage("Flow rate must be a positive number"),
@@ -189,108 +173,201 @@ router.post(
       const {
         pondId,
         temperature,
-        ph_level,
-        dissolved_oxygen,
+        ph,
+        oxygen,
         salinity,
         turbidity,
-        ammonia_level,
-        nitrite_level,
-        nitrate_level,
-        water_level,
-        flow_rate,
+        ammonia,
+        nitrite,
+        nitrate,
+        waterLevel,
+        flowRate,
       } = req.body;
 
-      // Check if user has access to this pond
-      const accessQuery = `
-      SELECT p.ID, p.NAME, p.TYPE
-      FROM PONDS p
-      JOIN FARMS f ON p.FARM_ID = f.ID
-      JOIN FARM_USERS fu ON f.ID = fu.FARM_ID
-      WHERE p.ID = $1 AND fu.USER_ID = $2 AND p.IS_ACTIVE = true
-    `;
-      const accessResult = await dbQuery(accessQuery, [
-        pondId,
-        req.user.userId,
-      ]);
+      const prisma = req.app.get("prisma");
 
-      if (accessResult.rows.length === 0) {
+      // Check if user has access to this pond
+      const pond = await prisma.pond.findFirst({
+        where: {
+          id: pondId,
+          isActive: true,
+          farm: {
+            users: {
+              some: {
+                userId: req.user.userId,
+              },
+            },
+          },
+        },
+        include: {
+          farm: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!pond) {
         return res.status(404).json({
           success: false,
           message: "Pond not found or access denied",
         });
       }
 
-      const pond = accessResult.rows[0];
+      // Create sensor reading using Prisma
+      const sensorReading = await prisma.sensorData.create({
+        data: {
+          pondId,
+          userId: req.user.userId,
+          temperature,
+          ph,
+          oxygen,
+          salinity,
+          turbidity,
+          ammonia,
+          nitrite,
+          nitrate,
+          waterLevel,
+          flowRate,
+        },
+      });
 
-      // Create sensor reading
-      const insertQuery = `
-      INSERT INTO SENSOR_DATA (
-        POND_ID, TEMPERATURE, PH_LEVEL, DISSOLVED_OXYGEN, TURBIDITY, 
-        AMMONIA_LEVEL, NITRITE_LEVEL, NITRATE_LEVEL, SALINITY, WATER_LEVEL, FLOW_RATE
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *
-    `;
+      // Enhanced alert generation - Check for threshold violations
+      const thresholds = await prisma.threshold.findMany({
+        where: {
+          pondId,
+          isActive: true,
+        },
+      });
 
-      const insertResult = await dbQuery(insertQuery, [
-        pondId,
+      const createdAlerts = [];
+      const parameterMapping = {
         temperature,
-        ph_level,
-        dissolved_oxygen,
-        turbidity,
-        ammonia_level,
-        nitrite_level,
-        nitrate_level,
+        ph,
+        oxygen,
         salinity,
-        water_level,
-        flow_rate,
-      ]);
+        turbidity,
+        ammonia,
+        nitrite,
+        nitrate,
+        waterLevel,
+        flowRate,
+      };
 
-      const sensorReading = insertResult.rows[0];
-
-      // Check for threshold violations and create alerts if needed
-      const thresholdQuery = `
-      SELECT PARAMETER, MIN_VALUE, MAX_VALUE, OPTIMAL_MIN, OPTIMAL_MAX
-      FROM THRESHOLDS
-      WHERE POND_ID = $1 AND IS_ACTIVE = true
-    `;
-      const thresholdResult = await dbQuery(thresholdQuery, [pondId]);
-
-      for (const threshold of thresholdResult.rows) {
-        const param = threshold.parameter.toLowerCase();
-        const currentValue = req.body[param];
+      for (const threshold of thresholds) {
+        const currentValue = parameterMapping[threshold.parameter];
 
         if (currentValue !== undefined && currentValue !== null) {
+          let alertSeverity = null;
+          let thresholdValue = null;
+          let alertMessage = null;
+
+          // Check critical thresholds first
           if (
-            currentValue < threshold.min_value ||
-            currentValue > threshold.max_value
+            threshold.optimalMin !== null &&
+            currentValue < threshold.optimalMin
           ) {
-            // Create alert
-            const alertQuery = `
-            INSERT INTO ALERTS (
-              FARM_ID, POND_ID, USER_ID, TYPE, SEVERITY, TITLE, MESSAGE, 
-              PARAMETER, CURRENT_VALUE, THRESHOLD_VALUE
-            ) VALUES (
-              (SELECT FARM_ID FROM PONDS WHERE ID = $1), 
-              $1, $2, 'THRESHOLD_EXCEEDED', 
-              CASE WHEN $3 < $4 OR $3 > $5 THEN 'CRITICAL' ELSE 'HIGH' END,
-              $6, $7, $8, $3, 
-              CASE WHEN $3 < $4 THEN $4 ELSE $5 END
-            )
-          `;
+            alertSeverity = "CRITICAL";
+            thresholdValue = threshold.optimalMin;
+            alertMessage = `🚨 CRITICAL: ${threshold.parameter.replace(
+              "_",
+              " "
+            )} in ${pond.name} is critically low (${currentValue} < ${
+              threshold.optimalMin
+            })`;
+          } else if (
+            threshold.optimalMax !== null &&
+            currentValue > threshold.optimalMax
+          ) {
+            alertSeverity = "CRITICAL";
+            thresholdValue = threshold.optimalMax;
+            alertMessage = `🚨 CRITICAL: ${threshold.parameter.replace(
+              "_",
+              " "
+            )} in ${pond.name} is critically high (${currentValue} > ${
+              threshold.optimalMax
+            })`;
+          }
+          // Check normal thresholds
+          else if (
+            threshold.minValue !== null &&
+            currentValue < threshold.minValue
+          ) {
+            alertSeverity = "HIGH";
+            thresholdValue = threshold.minValue;
+            alertMessage = `⚠️ WARNING: ${threshold.parameter.replace(
+              "_",
+              " "
+            )} in ${pond.name} is below safe threshold (${currentValue} < ${
+              threshold.minValue
+            })`;
+          } else if (
+            threshold.maxValue !== null &&
+            currentValue > threshold.maxValue
+          ) {
+            alertSeverity = "HIGH";
+            thresholdValue = threshold.maxValue;
+            alertMessage = `⚠️ WARNING: ${threshold.parameter.replace(
+              "_",
+              " "
+            )} in ${pond.name} is above safe threshold (${currentValue} > ${
+              threshold.maxValue
+            })`;
+          }
 
-            const alertTitle = `${threshold.parameter} Alert`;
-            const alertMessage = `${threshold.parameter} value ${currentValue} is outside acceptable range (${threshold.min_value}-${threshold.max_value}) in ${pond.name}`;
+          if (alertSeverity && alertMessage) {
+            // Check if similar alert already exists and is not resolved (within last 30 minutes)
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+            const existingAlert = await prisma.alert.findFirst({
+              where: {
+                pondId,
+                parameter: threshold.parameter,
+                isResolved: false,
+                createdAt: {
+                  gte: thirtyMinutesAgo,
+                },
+              },
+            });
 
-            await dbQuery(alertQuery, [
-              pondId,
-              req.user.userId,
-              currentValue,
-              threshold.min_value,
-              threshold.max_value,
-              alertTitle,
-              alertMessage,
-              param,
-            ]);
+            if (!existingAlert) {
+              // Create new alert using Prisma
+              const newAlert = await prisma.alert.create({
+                data: {
+                  pondId,
+                  farmId: pond.farmId,
+                  userId: req.user.userId,
+                  type: "THRESHOLD_EXCEEDED",
+                  severity: alertSeverity,
+                  parameter: threshold.parameter,
+                  value: currentValue,
+                  threshold: thresholdValue,
+                  message: alertMessage,
+                },
+                include: {
+                  pond: {
+                    select: {
+                      id: true,
+                      name: true,
+                      type: true,
+                    },
+                  },
+                  farm: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              });
+
+              createdAlerts.push(newAlert);
+
+              logger.info(
+                `${alertSeverity} alert created for ${threshold.parameter} in pond ${pond.name}: ${currentValue} vs threshold ${thresholdValue}`
+              );
+            }
           }
         }
       }
@@ -298,6 +375,7 @@ router.post(
       // Emit real-time data to connected clients
       const io = req.app.get("io");
       if (io) {
+        // Emit sensor data
         io.to(`pond_${pondId}`).emit("sensorData", {
           pondId,
           data: sensorReading,
@@ -305,37 +383,68 @@ router.post(
             id: pond.id,
             name: pond.name,
             type: pond.type,
+            farmId: pond.farmId,
           },
         });
+
+        // Emit alerts if any were created
+        if (createdAlerts.length > 0) {
+          createdAlerts.forEach((alert) => {
+            io.to(`pond_${pondId}`).emit("alert", {
+              alert,
+              timestamp: new Date(),
+            });
+
+            // Also emit to farm channel
+            io.to(`farm_${pond.farmId}`).emit("alert", {
+              alert,
+              timestamp: new Date(),
+            });
+          });
+        }
       }
 
-      // Log activity
-      const activityQuery = `
-      INSERT INTO ACTIVITY_LOGS (USER_ID, ACTION, ENTITY, ENTITY_ID, DETAILS)
-      VALUES ($1, $2, $3, $4, $5)
-    `;
-      await dbQuery(activityQuery, [
-        req.user.userId,
-        "SENSOR_DATA_ADDED",
-        "sensor_data",
-        sensorReading.id,
-        JSON.stringify({
-          pondId,
-          temperature,
-          ph_level,
-          dissolved_oxygen,
-          salinity,
-        }),
-      ]);
+      // Log activity using Prisma
+      await prisma.userActivity.create({
+        data: {
+          userId: req.user.userId,
+          action: "SENSOR_DATA_ADDED",
+          resource: "sensor_data",
+          resourceId: sensorReading.id,
+          metadata: {
+            pondId,
+            pondName: pond.name,
+            parameters: {
+              temperature,
+              ph,
+              oxygen,
+              salinity,
+              turbidity,
+              ammonia,
+              nitrite,
+              nitrate,
+            },
+            alertsGenerated: createdAlerts.length,
+          },
+        },
+      });
 
       logger.info(
-        `Sensor data added for pond ${pondId} by user ${req.user.userId}`
+        `Sensor data added for pond ${pond.name} by user ${req.user.userId}. ${createdAlerts.length} alerts generated.`
       );
 
       res.status(201).json({
         success: true,
-        message: "Sensor data recorded successfully",
-        data: { sensorReading },
+        message: `Sensor data recorded successfully${
+          createdAlerts.length > 0
+            ? ` with ${createdAlerts.length} alert(s) generated`
+            : ""
+        }`,
+        data: {
+          sensorReading,
+          alertsGenerated: createdAlerts.length,
+          alerts: createdAlerts,
+        },
       });
     } catch (error) {
       logger.error("Add sensor data error:", error);
@@ -355,7 +464,7 @@ router.post(
 router.get(
   "/stats/:pondId",
   [
-    param("pondId").isUUID().withMessage("Pond ID must be a valid UUID"),
+    param("pondId").isString().withMessage("Pond ID must be a string"),
     query("period")
       .optional()
       .isIn(["day", "week", "month"])
@@ -374,21 +483,24 @@ router.get(
 
       const { pondId } = req.params;
       const { period = "day" } = req.query;
+      const prisma = req.app.get("prisma");
 
       // Check if user has access to this pond
-      const accessQuery = `
-      SELECT p.ID, p.NAME, p.TYPE
-      FROM PONDS p
-      JOIN FARMS f ON p.FARM_ID = f.ID
-      JOIN FARM_USERS fu ON f.ID = fu.FARM_ID
-      WHERE p.ID = $1 AND fu.USER_ID = $2 AND p.IS_ACTIVE = true
-    `;
-      const accessResult = await dbQuery(accessQuery, [
-        pondId,
-        req.user.userId,
-      ]);
+      const pond = await prisma.pond.findFirst({
+        where: {
+          id: pondId,
+          isActive: true,
+          farm: {
+            users: {
+              some: {
+                userId: req.user.userId,
+              },
+            },
+          },
+        },
+      });
 
-      if (accessResult.rows.length === 0) {
+      if (!pond) {
         return res.status(404).json({
           success: false,
           message: "Pond not found or access denied",
@@ -397,48 +509,36 @@ router.get(
 
       // Calculate date range based on period
       const now = new Date();
-      let intervalClause;
+      let startDate;
 
       switch (period) {
         case "day":
-          intervalClause = "INTERVAL '1 day'";
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
           break;
         case "week":
-          intervalClause = "INTERVAL '7 days'";
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           break;
         case "month":
-          intervalClause = "INTERVAL '30 days'";
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
         default:
-          intervalClause = "INTERVAL '1 day'";
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       }
 
-      // Get sensor data statistics
-      const statsQuery = `
-      SELECT 
-        COUNT(*) as total_readings,
-        AVG(TEMPERATURE) as avg_temperature,
-        MIN(TEMPERATURE) as min_temperature,
-        MAX(TEMPERATURE) as max_temperature,
-        AVG(PH_LEVEL) as avg_ph,
-        MIN(PH_LEVEL) as min_ph,
-        MAX(PH_LEVEL) as max_ph,
-        AVG(DISSOLVED_OXYGEN) as avg_oxygen,
-        MIN(DISSOLVED_OXYGEN) as min_oxygen,
-        MAX(DISSOLVED_OXYGEN) as max_oxygen,
-        AVG(SALINITY) as avg_salinity,
-        MIN(SALINITY) as min_salinity,
-        MAX(SALINITY) as max_salinity,
-        (SELECT TEMPERATURE FROM SENSOR_DATA WHERE POND_ID = $1 ORDER BY CREATED_AT DESC LIMIT 1) as current_temperature,
-        (SELECT PH_LEVEL FROM SENSOR_DATA WHERE POND_ID = $1 ORDER BY CREATED_AT DESC LIMIT 1) as current_ph,
-        (SELECT DISSOLVED_OXYGEN FROM SENSOR_DATA WHERE POND_ID = $1 ORDER BY CREATED_AT DESC LIMIT 1) as current_oxygen,
-        (SELECT SALINITY FROM SENSOR_DATA WHERE POND_ID = $1 ORDER BY CREATED_AT DESC LIMIT 1) as current_salinity
-      FROM SENSOR_DATA
-      WHERE POND_ID = $1 AND CREATED_AT >= NOW() - ${intervalClause}
-    `;
-      const statsResult = await dbQuery(statsQuery, [pondId]);
+      // Get sensor data for the period
+      const sensorData = await prisma.sensorData.findMany({
+        where: {
+          pondId,
+          timestamp: {
+            gte: startDate,
+          },
+        },
+        orderBy: {
+          timestamp: "desc",
+        },
+      });
 
-      if (parseInt(statsResult.rows[0].total_readings) === 0) {
+      if (sensorData.length === 0) {
         return res.json({
           success: true,
           data: {
@@ -450,83 +550,59 @@ router.get(
         });
       }
 
-      const rawStats = statsResult.rows[0];
+      // Calculate statistics
+      const calculateStats = (values) => {
+        const validValues = values.filter((v) => v !== null && v !== undefined);
+        if (validValues.length === 0)
+          return { min: 0, max: 0, avg: 0, current: 0 };
 
-      // Format statistics
-      const stats = {
-        temperature: {
-          min: parseFloat(rawStats.min_temperature) || 0,
-          max: parseFloat(rawStats.max_temperature) || 0,
+        return {
+          min: Math.min(...validValues),
+          max: Math.max(...validValues),
           avg:
-            Math.round(parseFloat(rawStats.avg_temperature) * 100) / 100 || 0,
-          current: parseFloat(rawStats.current_temperature) || 0,
-        },
-        ph_level: {
-          min: parseFloat(rawStats.min_ph) || 0,
-          max: parseFloat(rawStats.max_ph) || 0,
-          avg: Math.round(parseFloat(rawStats.avg_ph) * 100) / 100 || 0,
-          current: parseFloat(rawStats.current_ph) || 0,
-        },
-        dissolved_oxygen: {
-          min: parseFloat(rawStats.min_oxygen) || 0,
-          max: parseFloat(rawStats.max_oxygen) || 0,
-          avg: Math.round(parseFloat(rawStats.avg_oxygen) * 100) / 100 || 0,
-          current: parseFloat(rawStats.current_oxygen) || 0,
-        },
-        salinity: {
-          min: parseFloat(rawStats.min_salinity) || 0,
-          max: parseFloat(rawStats.max_salinity) || 0,
-          avg: Math.round(parseFloat(rawStats.avg_salinity) * 100) / 100 || 0,
-          current: parseFloat(rawStats.current_salinity) || 0,
-        },
+            Math.round(
+              (validValues.reduce((sum, val) => sum + val, 0) /
+                validValues.length) *
+                100
+            ) / 100,
+          current: validValues[0] || 0,
+        };
       };
 
-      // Calculate trends (comparison between first and last readings in period)
-      const trendsQuery = `
-      WITH first_last AS (
-        SELECT 
-          FIRST_VALUE(TEMPERATURE) OVER (ORDER BY CREATED_AT) as first_temp,
-          LAST_VALUE(TEMPERATURE) OVER (ORDER BY CREATED_AT ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_temp,
-          FIRST_VALUE(PH_LEVEL) OVER (ORDER BY CREATED_AT) as first_ph,
-          LAST_VALUE(PH_LEVEL) OVER (ORDER BY CREATED_AT ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_ph,
-          FIRST_VALUE(DISSOLVED_OXYGEN) OVER (ORDER BY CREATED_AT) as first_oxygen,
-          LAST_VALUE(DISSOLVED_OXYGEN) OVER (ORDER BY CREATED_AT ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_oxygen,
-          FIRST_VALUE(SALINITY) OVER (ORDER BY CREATED_AT) as first_salinity,
-          LAST_VALUE(SALINITY) OVER (ORDER BY CREATED_AT ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_salinity
-        FROM SENSOR_DATA
-        WHERE POND_ID = $1 AND CREATED_AT >= NOW() - ${intervalClause}
-      )
-      SELECT DISTINCT * FROM first_last
-    `;
-      const trendsResult = await dbQuery(trendsQuery, [pondId]);
+      const stats = {
+        temperature: calculateStats(sensorData.map((d) => d.temperature)),
+        ph: calculateStats(sensorData.map((d) => d.ph)),
+        oxygen: calculateStats(sensorData.map((d) => d.oxygen)),
+        salinity: calculateStats(sensorData.map((d) => d.salinity)),
+        turbidity: calculateStats(sensorData.map((d) => d.turbidity)),
+        ammonia: calculateStats(sensorData.map((d) => d.ammonia)),
+        nitrite: calculateStats(sensorData.map((d) => d.nitrite)),
+        nitrate: calculateStats(sensorData.map((d) => d.nitrate)),
+      };
 
+      // Calculate trends (first vs last reading)
       let trends = null;
-      if (trendsResult.rows.length > 0) {
-        const trendData = trendsResult.rows[0];
+      if (sensorData.length >= 2) {
+        const first = sensorData[sensorData.length - 1];
+        const last = sensorData[0];
+
         trends = {
           temperature:
-            Math.round(
-              (parseFloat(trendData.last_temp) -
-                parseFloat(trendData.first_temp)) *
-                100
-            ) / 100,
-          ph_level:
-            Math.round(
-              (parseFloat(trendData.last_ph) - parseFloat(trendData.first_ph)) *
-                100
-            ) / 100,
-          dissolved_oxygen:
-            Math.round(
-              (parseFloat(trendData.last_oxygen) -
-                parseFloat(trendData.first_oxygen)) *
-                100
-            ) / 100,
+            last.temperature && first.temperature
+              ? Math.round((last.temperature - first.temperature) * 100) / 100
+              : 0,
+          ph:
+            last.ph && first.ph
+              ? Math.round((last.ph - first.ph) * 100) / 100
+              : 0,
+          oxygen:
+            last.oxygen && first.oxygen
+              ? Math.round((last.oxygen - first.oxygen) * 100) / 100
+              : 0,
           salinity:
-            Math.round(
-              (parseFloat(trendData.last_salinity) -
-                parseFloat(trendData.first_salinity)) *
-                100
-            ) / 100,
+            last.salinity && first.salinity
+              ? Math.round((last.salinity - first.salinity) * 100) / 100
+              : 0,
         };
       }
 
@@ -534,18 +610,11 @@ router.get(
         success: true,
         data: {
           period,
-          count: parseInt(rawStats.total_readings),
+          count: sensorData.length,
           stats,
           trends,
           dateRange: {
-            start: new Date(
-              now.getTime() -
-                (period === "day"
-                  ? 24 * 60 * 60 * 1000
-                  : period === "week"
-                  ? 7 * 24 * 60 * 60 * 1000
-                  : 30 * 24 * 60 * 60 * 1000)
-            ),
+            start: startDate,
             end: now,
           },
         },
@@ -567,7 +636,7 @@ router.get(
 // @access  Private
 router.get(
   "/latest/:pondId",
-  [param("pondId").isUUID().withMessage("Pond ID must be a valid UUID")],
+  [param("pondId").isString().withMessage("Pond ID must be a string")],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -580,52 +649,41 @@ router.get(
       }
 
       const { pondId } = req.params;
+      const prisma = req.app.get("prisma");
 
       // Check if user has access to this pond
-      const accessQuery = `
-      SELECT p.ID, p.NAME, p.TYPE
-      FROM PONDS p
-      JOIN FARMS f ON p.FARM_ID = f.ID
-      JOIN FARM_USERS fu ON f.ID = fu.FARM_ID
-      WHERE p.ID = $1 AND fu.USER_ID = $2 AND p.IS_ACTIVE = true
-    `;
-      const accessResult = await dbQuery(accessQuery, [
-        pondId,
-        req.user.userId,
-      ]);
+      const pond = await prisma.pond.findFirst({
+        where: {
+          id: pondId,
+          isActive: true,
+          farm: {
+            users: {
+              some: {
+                userId: req.user.userId,
+              },
+            },
+          },
+        },
+      });
 
-      if (accessResult.rows.length === 0) {
+      if (!pond) {
         return res.status(404).json({
           success: false,
           message: "Pond not found or access denied",
         });
       }
 
-      const pond = accessResult.rows[0];
-
       // Get latest sensor reading
-      const latestQuery = `
-      SELECT 
-        ID,
-        TEMPERATURE,
-        PH_LEVEL,
-        DISSOLVED_OXYGEN,
-        TURBIDITY,
-        AMMONIA_LEVEL,
-        NITRITE_LEVEL,
-        NITRATE_LEVEL,
-        SALINITY,
-        WATER_LEVEL,
-        FLOW_RATE,
-        CREATED_AT
-      FROM SENSOR_DATA
-      WHERE POND_ID = $1
-      ORDER BY CREATED_AT DESC
-      LIMIT 1
-    `;
-      const latestResult = await dbQuery(latestQuery, [pondId]);
+      const sensorReading = await prisma.sensorData.findFirst({
+        where: {
+          pondId,
+        },
+        orderBy: {
+          timestamp: "desc",
+        },
+      });
 
-      if (latestResult.rows.length === 0) {
+      if (!sensorReading) {
         return res.json({
           success: true,
           data: {
@@ -638,7 +696,7 @@ router.get(
       res.json({
         success: true,
         data: {
-          sensorReading: latestResult.rows[0],
+          sensorReading,
           pond: {
             id: pond.id,
             name: pond.name,
@@ -665,7 +723,7 @@ router.delete(
   "/data/:id",
   [
     authorize("ADMIN"),
-    param("id").isUUID().withMessage("Sensor data ID must be a valid UUID"),
+    param("id").isString().withMessage("Sensor data ID must be a string"),
   ],
   async (req, res) => {
     try {
@@ -679,44 +737,46 @@ router.delete(
       }
 
       const { id } = req.params;
+      const prisma = req.app.get("prisma");
 
       // Check if sensor reading exists
-      const checkQuery = `
-      SELECT sd.ID, sd.POND_ID, p.NAME as pond_name
-      FROM SENSOR_DATA sd
-      JOIN PONDS p ON sd.POND_ID = p.ID
-      WHERE sd.ID = $1
-    `;
-      const checkResult = await dbQuery(checkQuery, [id]);
+      const sensorReading = await prisma.sensorData.findUnique({
+        where: { id },
+        include: {
+          pond: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
 
-      if (checkResult.rows.length === 0) {
+      if (!sensorReading) {
         return res.status(404).json({
           success: false,
           message: "Sensor reading not found",
         });
       }
 
-      const sensorReading = checkResult.rows[0];
-
       // Delete sensor reading
-      const deleteQuery = `DELETE FROM SENSOR_DATA WHERE ID = $1`;
-      await dbQuery(deleteQuery, [id]);
+      await prisma.sensorData.delete({
+        where: { id },
+      });
 
       // Log activity
-      const activityQuery = `
-      INSERT INTO ACTIVITY_LOGS (USER_ID, ACTION, ENTITY, ENTITY_ID, DETAILS)
-      VALUES ($1, $2, $3, $4, $5)
-    `;
-      await dbQuery(activityQuery, [
-        req.user.userId,
-        "SENSOR_DATA_DELETED",
-        "sensor_data",
-        id,
-        JSON.stringify({
-          pondId: sensorReading.pond_id,
-          pondName: sensorReading.pond_name,
-        }),
-      ]);
+      await prisma.userActivity.create({
+        data: {
+          userId: req.user.userId,
+          action: "SENSOR_DATA_DELETED",
+          resource: "sensor_data",
+          resourceId: id,
+          metadata: {
+            pondId: sensorReading.pondId,
+            pondName: sensorReading.pond.name,
+          },
+        },
+      });
 
       logger.info(`Sensor data deleted: ${id} by admin ${req.user.userId}`);
 

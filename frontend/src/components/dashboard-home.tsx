@@ -26,6 +26,7 @@ import {
   Calendar,
   Bell,
   Settings,
+  LineChart,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -153,6 +154,57 @@ const generateTrendData = () => ({
   },
 });
 
+// Add pH history data generator
+const generatePHHistoryData = () => {
+  const now = new Date();
+  const data = [];
+
+  // Generate 24 hours of pH data (every 30 minutes)
+  for (let i = 47; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * 30 * 60 * 1000);
+    const baseValue = 7.2 + Math.sin(i * 0.3) * 0.8; // Oscillating around 7.2
+    const noise = (Math.random() - 0.5) * 0.4; // Random noise
+    const value = Math.max(6.0, Math.min(8.5, baseValue + noise));
+
+    data.push({
+      time: time.toISOString(),
+      value: Number(value.toFixed(2)),
+      label: time.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: value < 6.5 ? "low" : value > 8.0 ? "high" : "normal",
+    });
+  }
+
+  return data;
+};
+
+// Generate temperature history data for comparison
+const generateTemperatureHistoryData = () => {
+  const now = new Date();
+  const data = [];
+
+  for (let i = 47; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * 30 * 60 * 1000);
+    const baseValue = 24 + Math.sin(i * 0.2) * 3; // Temperature variation
+    const noise = (Math.random() - 0.5) * 1;
+    const value = Math.max(18, Math.min(30, baseValue + noise));
+
+    data.push({
+      time: time.toISOString(),
+      value: Number(value.toFixed(1)),
+      label: time.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: value < 20 ? "low" : value > 28 ? "high" : "normal",
+    });
+  }
+
+  return data;
+};
+
 export function DashboardHome() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -162,6 +214,13 @@ export function DashboardHome() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isConnected, setIsConnected] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [phHistory, setPHHistory] = useState(() => generatePHHistoryData());
+  const [temperatureHistory, setTemperatureHistory] = useState(() =>
+    generateTemperatureHistoryData()
+  );
+  const [selectedParameter, setSelectedParameter] = useState<
+    "ph" | "temperature"
+  >("ph");
 
   // Real-time data states with stable references
   const [systemMetrics, setSystemMetrics] = useState(() =>
@@ -173,6 +232,57 @@ export function DashboardHome() {
   const [trendData, setTrendData] = useState(() => generateTrendData());
   const [liveReadings, setLiveReadings] = useState<{ [key: string]: any }>({});
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Add function to update pH history (moved before useEffect)
+  const updatePHHistory = useCallback(() => {
+    setPHHistory((prev) => {
+      const newData = [...prev];
+      // Remove oldest entry and add new one
+      newData.shift();
+
+      const now = new Date();
+      const lastValue = newData[newData.length - 1]?.value || 7.2;
+      const variation = (Math.random() - 0.5) * 0.3;
+      const newValue = Math.max(6.0, Math.min(8.5, lastValue + variation));
+
+      newData.push({
+        time: now.toISOString(),
+        value: Number(newValue.toFixed(2)),
+        label: now.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: newValue < 6.5 ? "low" : newValue > 8.0 ? "high" : "normal",
+      });
+
+      return newData;
+    });
+  }, []);
+
+  // Add function to update temperature history (moved before useEffect)
+  const updateTemperatureHistory = useCallback(() => {
+    setTemperatureHistory((prev) => {
+      const newData = [...prev];
+      newData.shift();
+
+      const now = new Date();
+      const lastValue = newData[newData.length - 1]?.value || 24;
+      const variation = (Math.random() - 0.5) * 0.5;
+      const newValue = Math.max(18, Math.min(30, lastValue + variation));
+
+      newData.push({
+        time: now.toISOString(),
+        value: Number(newValue.toFixed(1)),
+        label: now.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: newValue < 20 ? "low" : newValue > 28 ? "high" : "normal",
+      });
+
+      return newData;
+    });
+  }, []);
 
   // Generate fake basin data with stable IDs
   const generateFakeBasin = useCallback(
@@ -452,6 +562,8 @@ export function DashboardHome() {
       addNewActivity();
       updateTrendData();
       updateLiveReadings();
+      updatePHHistory();
+      updateTemperatureHistory();
       setLastUpdate(new Date());
     }, 5000); // Update every 5 seconds instead of 30
 
@@ -463,6 +575,8 @@ export function DashboardHome() {
     addNewActivity,
     updateTrendData,
     updateLiveReadings,
+    updatePHHistory,
+    updateTemperatureHistory,
   ]);
 
   // Periodic sensor readings update
@@ -475,6 +589,159 @@ export function DashboardHome() {
 
     return () => clearInterval(sensorInterval);
   }, [autoRefresh, isInitialized, updateSensorReadings]);
+
+  // Add chart component
+  const ParameterChart = ({
+    data,
+    parameter,
+  }: {
+    data: any[];
+    parameter: "ph" | "temperature";
+  }) => {
+    const getColor = (status: string) => {
+      switch (status) {
+        case "low":
+          return "#ef4444";
+        case "high":
+          return "#f59e0b";
+        default:
+          return "#10b981";
+      }
+    };
+
+    const getThresholds = () => {
+      if (parameter === "ph") {
+        return { min: 6.5, max: 8.0, unit: "" };
+      } else {
+        return { min: 20, max: 28, unit: "°C" };
+      }
+    };
+
+    const thresholds = getThresholds();
+    const maxValue = Math.max(...data.map((d) => d.value));
+    const minValue = Math.min(...data.map((d) => d.value));
+    const range = maxValue - minValue;
+    const padding = range * 0.1;
+    const chartMin = Math.max(0, minValue - padding);
+    const chartMax = maxValue + padding;
+    const chartRange = chartMax - chartMin;
+
+    return (
+      <div className="h-80 relative">
+        {/* Chart area */}
+        <div className="absolute inset-0 p-4">
+          <svg width="100%" height="100%" className="overflow-visible">
+            {/* Background grid */}
+            <defs>
+              <pattern
+                id="grid"
+                width="40"
+                height="30"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M 40 0 L 0 0 0 30"
+                  fill="none"
+                  stroke="#f3f4f6"
+                  strokeWidth="1"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+
+            {/* Threshold lines */}
+            <line
+              x1="0"
+              y1={`${100 - ((thresholds.min - chartMin) / chartRange) * 100}%`}
+              x2="100%"
+              y2={`${100 - ((thresholds.min - chartMin) / chartRange) * 100}%`}
+              stroke="#fbbf24"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              opacity="0.7"
+            />
+            <line
+              x1="0"
+              y1={`${100 - ((thresholds.max - chartMin) / chartRange) * 100}%`}
+              x2="100%"
+              y2={`${100 - ((thresholds.max - chartMin) / chartRange) * 100}%`}
+              stroke="#fbbf24"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              opacity="0.7"
+            />
+
+            {/* Data line */}
+            <polyline
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={data
+                .map((point, index) => {
+                  const x = (index / (data.length - 1)) * 100;
+                  const y = 100 - ((point.value - chartMin) / chartRange) * 100;
+                  return `${x},${y}`;
+                })
+                .join(" ")}
+            />
+
+            {/* Data points */}
+            {data.map((point, index) => {
+              const x = (index / (data.length - 1)) * 100;
+              const y = 100 - ((point.value - chartMin) / chartRange) * 100;
+              return (
+                <g key={index}>
+                  <circle
+                    cx={`${x}%`}
+                    cy={`${y}%`}
+                    r="4"
+                    fill={getColor(point.status)}
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  {/* Tooltip on hover */}
+                  <circle
+                    cx={`${x}%`}
+                    cy={`${y}%`}
+                    r="8"
+                    fill="transparent"
+                    className="cursor-pointer"
+                  >
+                    <title>{`${point.label}: ${point.value}${thresholds.unit}`}</title>
+                  </circle>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Y-axis labels */}
+        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 pr-2">
+          <span>
+            {chartMax.toFixed(1)}
+            {thresholds.unit}
+          </span>
+          <span>
+            {((chartMax + chartMin) / 2).toFixed(1)}
+            {thresholds.unit}
+          </span>
+          <span>
+            {chartMin.toFixed(1)}
+            {thresholds.unit}
+          </span>
+        </div>
+
+        {/* X-axis labels */}
+        <div className="absolute bottom-0 left-8 right-0 flex justify-between text-xs text-gray-500">
+          <span>{data[0]?.label}</span>
+          <span>{data[Math.floor(data.length / 2)]?.label}</span>
+          <span>{data[data.length - 1]?.label}</span>
+        </div>
+      </div>
+    );
+  };
 
   const getBasinStatus = (basin: Basin) => {
     const currentReading = liveReadings[basin.id] || basin.sensorData?.[0];
@@ -863,7 +1130,7 @@ export function DashboardHome() {
       </div>
 
       {/* Live System Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -933,7 +1200,7 @@ export function DashboardHome() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Live Trend Analysis */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -960,6 +1227,152 @@ export function DashboardHome() {
           </Card>
         ))}
       </div>
+
+      {/* pH Analytics Graph */}
+      <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <LineChart className="h-6 w-6 text-blue-500" />
+              Analyse Temporelle des Paramètres
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={selectedParameter === "ph" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedParameter("ph")}
+                className="rounded-xl"
+              >
+                <Droplets className="h-4 w-4 mr-2" />
+                pH
+              </Button>
+              <Button
+                variant={
+                  selectedParameter === "temperature" ? "default" : "outline"
+                }
+                size="sm"
+                onClick={() => setSelectedParameter("temperature")}
+                className="rounded-xl"
+              >
+                <Thermometer className="h-4 w-4 mr-2" />
+                Température
+              </Button>
+              <Badge className="bg-green-100 text-green-700 border-green-200">
+                <Activity className="h-4 w-4 mr-1" />
+                Temps Réel
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Current Values Display */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-2xl">
+              <div className="text-2xl font-bold text-blue-700">
+                {selectedParameter === "ph"
+                  ? phHistory[phHistory.length - 1]?.value
+                  : `${
+                      temperatureHistory[temperatureHistory.length - 1]?.value
+                    }°C`}
+              </div>
+              <div className="text-sm text-blue-600">Valeur Actuelle</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-2xl">
+              <div className="text-2xl font-bold text-green-700">
+                {selectedParameter === "ph"
+                  ? Math.max(...phHistory.map((d) => d.value)).toFixed(2)
+                  : `${Math.max(
+                      ...temperatureHistory.map((d) => d.value)
+                    ).toFixed(1)}°C`}
+              </div>
+              <div className="text-sm text-green-600">Maximum 24h</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-2xl">
+              <div className="text-2xl font-bold text-orange-700">
+                {selectedParameter === "ph"
+                  ? Math.min(...phHistory.map((d) => d.value)).toFixed(2)
+                  : `${Math.min(
+                      ...temperatureHistory.map((d) => d.value)
+                    ).toFixed(1)}°C`}
+              </div>
+              <div className="text-sm text-orange-600">Minimum 24h</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-2xl">
+              <div className="text-2xl font-bold text-purple-700">
+                {selectedParameter === "ph"
+                  ? (
+                      phHistory.reduce((sum, d) => sum + d.value, 0) /
+                      phHistory.length
+                    ).toFixed(2)
+                  : `${(
+                      temperatureHistory.reduce((sum, d) => sum + d.value, 0) /
+                      temperatureHistory.length
+                    ).toFixed(1)}°C`}
+              </div>
+              <div className="text-sm text-purple-600">Moyenne 24h</div>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-700">
+                Évolution sur 24h (mise à jour toutes les 30 min)
+              </h3>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-600">Normal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-gray-600">Attention</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-gray-600">Critique</span>
+                </div>
+              </div>
+            </div>
+            <ParameterChart
+              data={selectedParameter === "ph" ? phHistory : temperatureHistory}
+              parameter={selectedParameter}
+            />
+          </div>
+
+          {/* Insights */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50 rounded-2xl">
+              <h4 className="font-medium text-blue-700 mb-2 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Tendance Récente
+              </h4>
+              <p className="text-sm text-blue-600">
+                {selectedParameter === "ph"
+                  ? phHistory[phHistory.length - 1]?.value >
+                    phHistory[phHistory.length - 6]?.value
+                    ? "📈 Augmentation progressive détectée"
+                    : "📉 Stabilisation ou légère baisse"
+                  : temperatureHistory[temperatureHistory.length - 1]?.value >
+                    temperatureHistory[temperatureHistory.length - 6]?.value
+                  ? "📈 Température en hausse"
+                  : "📉 Température stable ou en baisse"}
+              </p>
+            </div>
+            <div className="p-4 bg-green-50 rounded-2xl">
+              <h4 className="font-medium text-green-700 mb-2 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Prédiction IA
+              </h4>
+              <p className="text-sm text-green-600">
+                {selectedParameter === "ph"
+                  ? "Maintien dans la plage optimale prévu pour les 2 prochaines heures"
+                  : "Conditions thermiques stables attendues"}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Production Overview */}
       <Card className="rounded-3xl border-gray-100 shadow-sm">
@@ -1219,11 +1632,13 @@ export function DashboardHome() {
                     Bassin C3 pourrait dépasser 8.5 dans 2h
                   </p>
                   <div className="mt-2">
-                    <div className="text-xs text-orange-500 mb-1">Probabilité</div>
+                    <div className="text-xs text-orange-500 mb-1">
+                      Probabilité
+                    </div>
                     <Progress value={78} className="h-2" />
                   </div>
                 </div>
-                
+
                 <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200">
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -1262,7 +1677,7 @@ export function DashboardHome() {
                     Corrélation négative forte détectée
                   </p>
                 </div>
-                
+
                 <div className="p-4 bg-purple-50 rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-purple-700">
@@ -1276,7 +1691,7 @@ export function DashboardHome() {
                     Corrélation positive modérée
                   </p>
                 </div>
-                
+
                 <div className="p-4 bg-teal-50 rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-teal-700">
@@ -1310,11 +1725,14 @@ export function DashboardHome() {
                   <p className="text-xs text-green-600 mb-2">
                     Réduire de 1°C dans bassins B2-B5
                   </p>
-                  <Button size="sm" className="w-full text-xs bg-green-600 hover:bg-green-700">
+                  <Button
+                    size="sm"
+                    className="w-full text-xs bg-green-600 hover:bg-green-700"
+                  >
                     Appliquer
                   </Button>
                 </div>
-                
+
                 <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Droplets className="h-4 w-4 text-blue-500" />
@@ -1325,11 +1743,14 @@ export function DashboardHome() {
                   <p className="text-xs text-blue-600 mb-2">
                     Ajouter tampon dans bassin C3
                   </p>
-                  <Button size="sm" className="w-full text-xs bg-blue-600 hover:bg-blue-700">
+                  <Button
+                    size="sm"
+                    className="w-full text-xs bg-blue-600 hover:bg-blue-700"
+                  >
                     Programmer
                   </Button>
                 </div>
-                
+
                 <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl border border-orange-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Activity className="h-4 w-4 text-orange-500" />
@@ -1340,7 +1761,10 @@ export function DashboardHome() {
                   <p className="text-xs text-orange-600 mb-2">
                     Augmenter aération nocturne
                   </p>
-                  <Button size="sm" className="w-full text-xs bg-orange-600 hover:bg-orange-700">
+                  <Button
+                    size="sm"
+                    className="w-full text-xs bg-orange-600 hover:bg-orange-700"
+                  >
                     Activer
                   </Button>
                 </div>
@@ -1393,7 +1817,10 @@ export function DashboardHome() {
                     Bassin C3: pH 9.2 - Intervention immédiate requise
                   </p>
                   <div className="flex gap-2">
-                    <Button size="sm" className="flex-1 text-xs bg-red-600 hover:bg-red-700">
+                    <Button
+                      size="sm"
+                      className="flex-1 text-xs bg-red-600 hover:bg-red-700"
+                    >
                       Intervenir
                     </Button>
                     <Button size="sm" variant="outline" className="text-xs">
@@ -1401,7 +1828,7 @@ export function DashboardHome() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -1418,7 +1845,10 @@ export function DashboardHome() {
                     Bassin A7: 31°C - Surveillance renforcée
                   </p>
                   <div className="flex gap-2">
-                    <Button size="sm" className="flex-1 text-xs bg-orange-600 hover:bg-orange-700">
+                    <Button
+                      size="sm"
+                      className="flex-1 text-xs bg-orange-600 hover:bg-orange-700"
+                    >
                       Surveiller
                     </Button>
                     <Button size="sm" variant="outline" className="text-xs">
@@ -1451,7 +1881,7 @@ export function DashboardHome() {
                     <span className="text-xs text-purple-600">85%</span>
                   </div>
                 </div>
-                
+
                 <div className="p-4 bg-blue-50 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="h-4 w-4 text-blue-500" />
@@ -1467,7 +1897,7 @@ export function DashboardHome() {
                     <span className="text-xs text-blue-600">↓ 23%</span>
                   </div>
                 </div>
-                
+
                 <div className="p-4 bg-green-50 rounded-2xl">
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />

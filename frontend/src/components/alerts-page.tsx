@@ -47,102 +47,131 @@ export function AlertsPage() {
       try {
         setLoading(true);
 
-        // Mock alerts data since the API endpoint might not return the expected structure
-        const mockAlerts: Alert[] = [
-          {
-            id: "1",
-            pondId: "pond1",
-            farmId: "farm1",
-            type: "THRESHOLD_EXCEEDED",
-            severity: "HIGH",
-            parameter: "temperature",
-            value: 32.5,
-            threshold: 30.0,
-            message: "Température trop élevée dans le bassin principal",
-            isRead: false,
-            isResolved: false,
-            createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "2",
-            pondId: "pond2",
-            farmId: "farm1",
-            type: "WATER_QUALITY",
-            severity: "MEDIUM",
-            parameter: "ph",
-            value: 6.2,
-            threshold: 6.5,
-            message: "pH en dessous du seuil optimal",
-            isRead: true,
-            isResolved: false,
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "3",
-            pondId: "pond3",
-            farmId: "farm2",
-            type: "SENSOR_MALFUNCTION",
-            severity: "CRITICAL",
-            message: "Capteur d'oxygène défaillant",
-            isRead: false,
-            isResolved: false,
-            createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "4",
-            pondId: "pond1",
-            farmId: "farm1",
-            type: "MAINTENANCE_DUE",
-            severity: "LOW",
-            message: "Maintenance préventive programmée",
-            isRead: true,
-            isResolved: true,
-            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          },
-        ];
+        // Try to fetch real alerts from API first
+        try {
+          const alertsResponse = await apiClient.getAlerts();
+          const realAlerts = alertsResponse.data?.alerts || [];
 
-        setAlerts(mockAlerts);
+          // If we get real alerts, use them
+          if (realAlerts.length > 0) {
+            setAlerts(realAlerts);
+          } else {
+            // If no real alerts, use mock data
+            throw new Error("No alerts from API, using mock data");
+          }
+        } catch (alertsError) {
+          console.warn("Failed to fetch alerts from API:", alertsError);
+
+          // Use mock alerts data as fallback
+          const mockAlerts: Alert[] = [
+            {
+              id: "1",
+              pondId: "pond1",
+              farmId: "farm1",
+              type: "THRESHOLD_EXCEEDED",
+              severity: "HIGH",
+              parameter: "temperature",
+              value: 32.5,
+              threshold: 30.0,
+              message: "Température trop élevée dans le bassin principal",
+              isRead: false,
+              isResolved: false,
+              createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            },
+            {
+              id: "2",
+              pondId: "pond2",
+              farmId: "farm1",
+              type: "WATER_QUALITY",
+              severity: "MEDIUM",
+              parameter: "ph",
+              value: 6.2,
+              threshold: 6.5,
+              message: "pH en dessous du seuil optimal",
+              isRead: true,
+              isResolved: false,
+              createdAt: new Date(
+                Date.now() - 2 * 60 * 60 * 1000
+              ).toISOString(),
+            },
+            {
+              id: "3",
+              pondId: "pond3",
+              farmId: "farm2",
+              type: "SENSOR_MALFUNCTION",
+              severity: "CRITICAL",
+              message: "Capteur d'oxygène défaillant",
+              isRead: false,
+              isResolved: false,
+              createdAt: new Date(
+                Date.now() - 6 * 60 * 60 * 1000
+              ).toISOString(),
+            },
+            {
+              id: "4",
+              pondId: "pond1",
+              farmId: "farm1",
+              type: "MAINTENANCE_DUE",
+              severity: "LOW",
+              message: "Maintenance préventive programmée",
+              isRead: true,
+              isResolved: true,
+              createdAt: new Date(
+                Date.now() - 24 * 60 * 60 * 1000
+              ).toISOString(),
+            },
+          ];
+
+          setAlerts(mockAlerts);
+        }
 
         // Try to get basins for reference, but don't fail if it doesn't work
-        try {
-          const basinsResponse = await apiClient.getBasins();
-          setBasins(basinsResponse.data?.ponds || []);
-        } catch (basinsError) {
-          console.warn("Failed to fetch basins:", basinsError);
-          // Set mock basins data as fallback
-          setBasins([
-            {
-              id: "pond1",
-              name: "Bassin Principal",
-              type: "FRESHWATER",
-              farm: {
-                id: "farm1",
-                name: "Ferme Aquacole Nord",
-                location: "Alger",
-              },
+        setBasins([
+          {
+            id: "pond1",
+            name: "Bassin Principal",
+            type: "FRESHWATER",
+            farm: {
+              id: "farm1",
+              name: "Ferme Aquacole Nord",
+              location: "Alger",
             },
-            {
-              id: "pond2",
-              name: "Bassin Secondaire",
-              type: "SALTWATER",
-              farm: {
-                id: "farm1",
-                name: "Ferme Aquacole Nord",
-                location: "Alger",
-              },
+          },
+          {
+            id: "pond2",
+            name: "Bassin Secondaire",
+            type: "SALTWATER",
+            farm: {
+              id: "farm1",
+              name: "Ferme Aquacole Nord",
+              location: "Alger",
             },
-            {
-              id: "pond3",
-              name: "Bassin Expérimental",
-              type: "BRACKISH",
-              farm: {
-                id: "farm2",
-                name: "Ferme Aquacole Sud",
-                location: "Oran",
-              },
+          },
+          {
+            id: "pond3",
+            name: "Bassin Expérimental",
+            type: "BRACKISH",
+            farm: {
+              id: "farm2",
+              name: "Ferme Aquacole Sud",
+              location: "Oran",
             },
-          ]);
-        }
+          },
+        ]);
+
+        // Try to get real basins in background (non-blocking)
+        apiClient
+          .getBasins()
+          .then((basinsResponse) => {
+            const realBasins = basinsResponse.data?.ponds || [];
+            if (realBasins.length > 0) {
+              setBasins(realBasins);
+            }
+          })
+          .catch((basinsError) => {
+            console.warn("Failed to fetch basins:", basinsError);
+            // Already have mock data set above, so do nothing
+          });
       } catch (error) {
         console.error("Error fetching alerts data:", error);
         // Even if everything fails, we'll show empty alerts

@@ -1,6 +1,6 @@
-const twilio = require('twilio');
-const cron = require('node-cron');
-const logger = require('../utils/logger');
+const twilio = require("twilio");
+const cron = require("node-cron");
+const logger = require("../utils/logger");
 
 class AlertService {
   constructor() {
@@ -14,72 +14,81 @@ class AlertService {
     this.io = io;
     this.prisma = prisma;
 
-    // Initialize Twilio client
+    // Initialize Twilio client with proper validation
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-      this.twilioClient = twilio(
-        process.env.TWILIO_ACCOUNT_SID,
-        process.env.TWILIO_AUTH_TOKEN
+      // Validate that Account SID starts with 'AC'
+      if (process.env.TWILIO_ACCOUNT_SID.startsWith("AC")) {
+        try {
+          this.twilioClient = twilio(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+          );
+          logger.info("SMS service initialized successfully");
+        } catch (error) {
+          logger.warn("Failed to initialize Twilio client:", error.message);
+          logger.info("SMS notifications will be disabled");
+        }
+      } else {
+        logger.warn(
+          "Invalid Twilio Account SID format (must start with AC). SMS notifications disabled."
+        );
+      }
+    } else {
+      logger.info(
+        "Twilio credentials not configured. SMS notifications disabled."
       );
-      logger.info('SMS service initialized successfully');
     }
 
     // Start monitoring job
     this.startMonitoring();
     this.isInitialized = true;
-    logger.info('Alert service initialized');
+    logger.info("Alert service initialized");
   }
 
   startMonitoring() {
     // Check for threshold violations every 2 minutes
-    cron.schedule('*/2 * * * *', async () => {
+    cron.schedule("*/2 * * * *", async () => {
       try {
         await this.checkThresholds();
       } catch (error) {
-        logger.error('Threshold monitoring error:', error);
+        logger.error("Threshold monitoring error:", error);
       }
     });
 
     // Clean up old resolved alerts every day at midnight
-    cron.schedule('0 0 * * *', async () => {
+    cron.schedule("0 0 * * *", async () => {
       try {
         await this.cleanupOldAlerts();
       } catch (error) {
-        logger.error('Alert cleanup error:', error);
+        logger.error("Alert cleanup error:", error);
       }
     });
 
-    logger.info('Alert monitoring jobs scheduled');
+    logger.info("Alert monitoring jobs scheduled");
   }
 
   async checkThresholds() {
     if (!this.prisma) return;
 
     try {
-      // Get all active ponds with their latest sensor data and thresholds
+      // Get all active ponds with their latest sensor data
       const ponds = await this.prisma.pond.findMany({
-        where: { isActive: true },
+        where: { status: "ACTIVE" },
         include: {
-          thresholds: {
-            where: { isActive: true }
-          },
           sensorData: {
-            orderBy: { timestamp: 'desc' },
-            take: 1
+            orderBy: { timestamp: "desc" },
+            take: 1,
           },
           farm: {
             include: {
               users: {
                 include: {
-                  user: {
-                    include: {
-                      preferences: true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                  user: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       for (const pond of ponds) {
@@ -93,22 +102,46 @@ class AlertService {
         if (readingAge > 60 * 60 * 1000) {
           await this.createAlert({
             pondId: pond.id,
-            farmId: pond.farmId,
-            type: 'SENSOR_MALFUNCTION',
-            severity: 'HIGH',
-            message: `No recent sensor data for ${pond.name}. Last reading was ${Math.round(readingAge / (60 * 1000))} minutes ago.`,
-            parameter: null,
-            value: null,
-            threshold: null,
+            userId: pond.userId,
+            type: "SENSOR_OFFLINE",
+            severity: "HIGH",
+            message: `No recent sensor data for ${
+              pond.name
+            }. Last reading was ${Math.round(
+              readingAge / (60 * 1000)
+            )} minutes ago.`,
+            metadata: {
+              parameter: "sensor_offline",
+              lastReadingAge: readingAge,
+              farmName: pond.farm.name,
+            },
           });
           continue;
         }
 
-        // Check each threshold
-        for (const threshold of pond.thresholds) {
-          const parameterKey = threshold.parameter.toLowerCase();
-          const currentValue = latestReading[parameterKey];
+        // For now, use basic thresholds since we don't have a thresholds table
+        // You can expand this once you have the thresholds properly set up
+        const basicThresholds = {
+          TEMPERATURE: {
+            min: 18.0,
+            max: 28.0,
+            critical: { min: 15.0, max: 32.0 },
+          },
+          PH: { min: 6.5, max: 8.5, critical: { min: 6.0, max: 9.0 } },
+          OXYGEN: { min: 5.0, max: 12.0, critical: { min: 3.0, max: 15.0 } },
+          AMMONIA: { min: 0.0, max: 0.5, critical: { min: 0.0, max: 1.0 } },
+        };
 
+        // Check each sensor type for threshold violations
+        for (const [sensorType, threshold] of Object.entries(basicThresholds)) {
+          // Find the latest reading for this sensor type
+          const relevantReading = pond.sensorData.find(
+            (reading) => reading.sensorType === sensorType
+          );
+
+          if (!relevantReading) continue;
+
+          const currentValue = relevantReading.value;
           if (currentValue === null || currentValue === undefined) continue;
 
           let alertType = null;
@@ -116,24 +149,24 @@ class AlertService {
           let thresholdValue = null;
 
           // Check critical thresholds first
-          if (threshold.criticalMin !== null && currentValue < threshold.criticalMin) {
-            alertType = 'THRESHOLD_EXCEEDED';
-            severity = 'CRITICAL';
-            thresholdValue = threshold.criticalMin;
-          } else if (threshold.criticalMax !== null && currentValue > threshold.criticalMax) {
-            alertType = 'THRESHOLD_EXCEEDED';
-            severity = 'CRITICAL';
-            thresholdValue = threshold.criticalMax;
+          if (currentValue < threshold.critical.min) {
+            alertType = `${sensorType}_LOW`;
+            severity = "CRITICAL";
+            thresholdValue = threshold.critical.min;
+          } else if (currentValue > threshold.critical.max) {
+            alertType = `${sensorType}_HIGH`;
+            severity = "CRITICAL";
+            thresholdValue = threshold.critical.max;
           }
           // Check normal thresholds
-          else if (threshold.minValue !== null && currentValue < threshold.minValue) {
-            alertType = 'THRESHOLD_EXCEEDED';
-            severity = 'HIGH';
-            thresholdValue = threshold.minValue;
-          } else if (threshold.maxValue !== null && currentValue > threshold.maxValue) {
-            alertType = 'THRESHOLD_EXCEEDED';
-            severity = 'HIGH';
-            thresholdValue = threshold.maxValue;
+          else if (currentValue < threshold.min) {
+            alertType = `${sensorType}_LOW`;
+            severity = "HIGH";
+            thresholdValue = threshold.min;
+          } else if (currentValue > threshold.max) {
+            alertType = `${sensorType}_HIGH`;
+            severity = "HIGH";
+            thresholdValue = threshold.max;
           }
 
           if (alertType) {
@@ -141,25 +174,33 @@ class AlertService {
             const existingAlert = await this.prisma.alert.findFirst({
               where: {
                 pondId: pond.id,
-                parameter: threshold.parameter,
                 type: alertType,
                 isResolved: false,
                 createdAt: {
-                  gte: new Date(now - 30 * 60 * 1000) // Within last 30 minutes
-                }
-              }
+                  gte: new Date(now - 30 * 60 * 1000), // Within last 30 minutes
+                },
+              },
             });
 
             if (!existingAlert) {
               const alert = await this.createAlert({
                 pondId: pond.id,
-                farmId: pond.farmId,
+                userId: pond.userId,
                 type: alertType,
                 severity,
-                parameter: threshold.parameter,
-                value: currentValue,
-                threshold: thresholdValue,
-                message: this.generateAlertMessage(pond.name, threshold.parameter, currentValue, thresholdValue, severity),
+                message: this.generateAlertMessage(
+                  pond.name,
+                  sensorType,
+                  currentValue,
+                  thresholdValue,
+                  severity
+                ),
+                metadata: {
+                  parameter: sensorType,
+                  currentValue,
+                  thresholdValue,
+                  farmName: pond.farm.name,
+                },
               });
 
               // Send notifications
@@ -169,7 +210,7 @@ class AlertService {
         }
       }
     } catch (error) {
-      logger.error('Threshold checking error:', error);
+      logger.error("Threshold checking error:", error);
     }
   }
 
@@ -182,27 +223,28 @@ class AlertService {
             select: {
               id: true,
               name: true,
-              type: true,
-            }
+              status: true,
+            },
           },
-          farm: {
+          user: {
             select: {
               id: true,
-              name: true,
-            }
-          }
-        }
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
       });
 
       // Emit real-time alert
       if (this.io) {
-        this.io.to(`pond_${alert.pondId}`).emit('alert', {
+        this.io.to(`pond_${alert.pondId}`).emit("alert", {
           alert,
           timestamp: new Date(),
         });
 
-        // Also emit to farm channel
-        this.io.to(`farm_${alert.farmId}`).emit('alert', {
+        // Also emit to user channel
+        this.io.to(`user_${alert.userId}`).emit("alert", {
           alert,
           timestamp: new Date(),
         });
@@ -211,27 +253,18 @@ class AlertService {
       logger.info(`Alert created: ${alert.type} for pond ${alert.pond.name}`);
       return alert;
     } catch (error) {
-      logger.error('Create alert error:', error);
+      logger.error("Create alert error:", error);
       throw error;
     }
   }
 
   async sendNotifications(alert, farmUsers) {
+    // For now, simplified notification sending since we don't have user preferences
     for (const farmUser of farmUsers) {
       const user = farmUser.user;
-      const preferences = user.preferences;
 
-      if (!preferences) continue;
-
-      // Check if user wants this severity level
-      const severityLevels = ['low', 'medium', 'high', 'critical'];
-      const userSeverityIndex = severityLevels.indexOf(preferences.alertSeverity);
-      const alertSeverityIndex = severityLevels.indexOf(alert.severity.toLowerCase());
-
-      if (alertSeverityIndex < userSeverityIndex) continue;
-
-      // Send SMS notification
-      if (preferences.smsAlerts && this.twilioClient && user.phone) {
+      // Send SMS notification if user has phone and Twilio is configured
+      if (this.twilioClient && user.phone) {
         try {
           await this.sendSMS(user.phone, alert);
         } catch (error) {
@@ -257,20 +290,20 @@ class AlertService {
 
   generateAlertMessage(pondName, parameter, value, threshold, severity) {
     const parameterNames = {
-      TEMPERATURE: 'Temperature',
-      PH: 'pH',
-      OXYGEN: 'Dissolved Oxygen',
-      SALINITY: 'Salinity',
-      TURBIDITY: 'Turbidity',
-      AMMONIA: 'Ammonia',
-      NITRITE: 'Nitrite',
-      NITRATE: 'Nitrate',
+      TEMPERATURE: "Temperature",
+      PH: "pH",
+      OXYGEN: "Dissolved Oxygen",
+      SALINITY: "Salinity",
+      TURBIDITY: "Turbidity",
+      AMMONIA: "Ammonia",
+      NITRITE: "Nitrite",
+      NITRATE: "Nitrate",
     };
 
     const parameterName = parameterNames[parameter] || parameter;
-    const direction = value < threshold ? 'below' : 'above';
-    
-    if (severity === 'CRITICAL') {
+    const direction = value < threshold ? "below" : "above";
+
+    if (severity === "CRITICAL") {
       return `🚨 CRITICAL: ${parameterName} in ${pondName} is ${direction} critical threshold (${value} vs ${threshold})`;
     } else {
       return `⚠️ WARNING: ${parameterName} in ${pondName} is ${direction} safe threshold (${value} vs ${threshold})`;
@@ -279,31 +312,31 @@ class AlertService {
 
   getSeverityColor(severity) {
     const colors = {
-      LOW: '#28a745',
-      MEDIUM: '#ffc107',
-      HIGH: '#fd7e14',
-      CRITICAL: '#dc3545',
+      LOW: "#28a745",
+      MEDIUM: "#ffc107",
+      HIGH: "#fd7e14",
+      CRITICAL: "#dc3545",
     };
-    return colors[severity] || '#6c757d';
+    return colors[severity] || "#6c757d";
   }
 
   async cleanupOldAlerts() {
     try {
       // Delete resolved alerts older than 30 days
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      
+
       const result = await this.prisma.alert.deleteMany({
         where: {
           isResolved: true,
           resolvedAt: {
-            lt: thirtyDaysAgo
-          }
-        }
+            lt: thirtyDaysAgo,
+          },
+        },
       });
 
       logger.info(`Cleaned up ${result.count} old resolved alerts`);
     } catch (error) {
-      logger.error('Alert cleanup error:', error);
+      logger.error("Alert cleanup error:", error);
     }
   }
 
@@ -315,23 +348,23 @@ class AlertService {
           isResolved: true,
           isRead: true,
           resolvedAt: new Date(),
-        }
+        },
       });
 
       // Log activity
       await this.prisma.activityLog.create({
         data: {
           userId,
-          action: 'resolve_alert',
-          entity: 'alert',
+          action: "resolve_alert",
+          entity: "alert",
           entityId: alertId,
           details: { alertType: alert.type, severity: alert.severity },
-        }
+        },
       });
 
       return alert;
     } catch (error) {
-      logger.error('Resolve alert error:', error);
+      logger.error("Resolve alert error:", error);
       throw error;
     }
   }

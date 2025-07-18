@@ -154,4 +154,4 @@ This backend provides a solid foundation for the aquaculture digitization challe
 
 ---
 
-_Built with ❤️ for JunctionX Algeria Challenge 4_
+_Built with ❤️ for JunctionX Algeria Challenge 4_//

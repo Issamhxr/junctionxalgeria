@@ -219,42 +219,6 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-4 py-6">
-        {/* User Info */}
-        {user && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-2xl group-data-[collapsible=icon]:p-2">
-            <div className="group-data-[collapsible=icon]:hidden">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800 text-sm">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-600">{user.email}</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <Badge
-                  className={`${getRoleColor(
-                    user.role
-                  )} rounded-full px-3 py-1 text-xs font-medium border`}
-                >
-                  {getRoleIcon(user.role)}
-                  <span className="ml-1">{getRoleLabel(user.role)}</span>
-                </Badge>
-              </div>
-            </div>
-            <div className="group-data-[collapsible=icon]:block hidden">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold text-sm mx-auto">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <Separator className="my-4 group-data-[collapsible=icon]:hidden" />
-
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>

@@ -95,7 +95,7 @@ junctionxalgeria/
 - **Database**: PostgreSQL
 - **Real-time**: Socket.IO
 - **Authentication**: JWT
-- **Notifications**: Nodemailer, Twilio
+- **Notifications**: Twilio (SMS)
 - **Logging**: Winston
 
 **Frontend (Planned):**
@@ -119,7 +119,7 @@ junctionxalgeria/
 - ✅ Pond management system
 - ✅ Real-time sensor data collection
 - ✅ Intelligent alerting system
-- ✅ Email and SMS notifications
+- ✅ SMS notifications
 - ✅ Dashboard analytics API
 - ✅ Data simulation for testing
 - ✅ Multi-language support

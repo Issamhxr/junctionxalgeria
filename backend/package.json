@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for Smart Aquaculture Management System - JunctionX Algeria Challenge 4",
   "main": "src/app.js",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
@@ -39,8 +42,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7",
-    "socket.io": "^4.7.4",
+    "pg": "^8.16.3",
+    "socket.io": "^4.8.1",
     "twilio": "^4.19.0",
     "winston": "^3.11.0"
   },

@@ -56,7 +56,7 @@ The API will be available at `http://localhost:5000`
 - **Farm & Pond Management** - Complete CRUD operations
 - **Real-time Sensor Data** - Live data collection and streaming
 - **Intelligent Alerts** - Automated threshold monitoring
-- **Email & SMS Notifications** - Multi-channel alert delivery
+- **SMS Notifications** - SMS alert delivery via Twilio
 - **Dashboard Analytics** - Statistical insights and trends
 - **Data Simulation** - Built-in testing data generation
 
@@ -68,6 +68,7 @@ The API will be available at `http://localhost:5000`
 - **Authentication:** JWT with bcrypt password hashing
 - **Validation:** Express-validator for input sanitization
 - **Logging:** Winston for comprehensive logging
+- **Notifications:** Twilio for SMS alerts
 - **Security:** Helmet, CORS, rate limiting
 
 ## 🔗 API Endpoints
@@ -157,12 +158,6 @@ NODE_ENV=development
 # JWT
 JWT_SECRET="your-secret-key"
 JWT_EXPIRE=7d
-
-# Email (Optional)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
 
 # SMS (Optional)
 TWILIO_ACCOUNT_SID=your-twilio-sid

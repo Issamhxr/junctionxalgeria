@@ -1,98 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { apiClient, Basin } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import {
   ArrowLeft,
   Thermometer,
   Droplets,
   Activity,
   Waves,
-  Download,
+  AlertTriangle,
   CheckCircle,
+  Clock,
+  TrendingUp,
+  Settings,
+  Download,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLanguage } from "@/components/language-context";
 
-// Mock historical data
-const mockHistoricalData = [
-  { time: "00:00", temperature: 24.2, ph: 7.1, oxygen: 8.3, salinity: 0.5 },
-  { time: "04:00", temperature: 23.8, ph: 7.2, oxygen: 8.5, salinity: 0.5 },
-  { time: "08:00", temperature: 25.1, ph: 7.0, oxygen: 8.1, salinity: 0.6 },
-  { time: "12:00", temperature: 26.8, ph: 6.9, oxygen: 7.8, salinity: 0.6 },
-  { time: "16:00", temperature: 28.2, ph: 6.8, oxygen: 7.2, salinity: 0.7 },
-  { time: "20:00", temperature: 26.5, ph: 7.1, oxygen: 7.9, salinity: 0.6 },
-];
+export function BasinDetailPage() {
+  const params = useParams();
+  const { user } = useAuth();
+  const [basin, setBasin] = useState<Basin | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const mockAlerts = [
-  {
-    id: "A001",
-    type: "temperature",
-    level: "warning",
-    message: "Température élevée détectée",
-    value: "28.2°C",
-    time: "14:25",
-    resolved: false,
-  },
-  {
-    id: "A002",
-    type: "ph",
-    level: "warning",
-    message: "pH en dessous du seuil optimal",
-    value: "6.8",
-    time: "14:20",
-    resolved: false,
-  },
-  {
-    id: "A003",
-    type: "oxygen",
-    level: "critical",
-    message: "Niveau d'oxygène critique",
-    value: "6.2 mg/L",
-    time: "13:45",
-    resolved: true,
-  },
-];
+  const basinId = params.id as string;
 
-interface BasinDetailPageProps {
-  basinId: string;
-}
+  useEffect(() => {
+    const fetchBasin = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.getPond(basinId);
+        setBasin(response.data.pond);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching basin:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch basin");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-export function BasinDetailPage({ basinId }: BasinDetailPageProps) {
-  const { t } = useLanguage();
-  const [alerts, setAlerts] = useState(mockAlerts);
-
-  const basinData = {
-    id: basinId,
-    name: "Bassin Principal B",
-    status: "warning",
-    temperature: 28.2,
-    ph: 6.8,
-    oxygen: 6.2,
-    salinity: 0.7,
-    lastUpdate: "5 min",
-  };
-
-  const resolveAlert = (alertId: string) => {
-    setAlerts(
-      alerts.map((alert) =>
-        alert.id === alertId ? { ...alert, resolved: true } : alert
-      )
-    );
-  };
+    if (basinId) {
+      fetchBasin();
+    }
+  }, [basinId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,339 +61,299 @@ export function BasinDetailPage({ basinId }: BasinDetailPageProps) {
         return "bg-amber-100 text-amber-700 border-amber-200";
       case "critical":
         return "bg-red-100 text-red-700 border-red-200";
+      case "offline":
+        return "bg-gray-100 text-gray-700 border-gray-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
-  const getAlertColor = (level: string) => {
-    switch (level) {
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "normal":
+        return <CheckCircle className="h-4 w-4" />;
       case "warning":
-        return "bg-amber-100 text-amber-700 border-amber-200";
+        return <AlertTriangle className="h-4 w-4" />;
       case "critical":
-        return "bg-red-100 text-red-700 border-red-200";
+        return <AlertTriangle className="h-4 w-4" />;
+      case "offline":
+        return <Clock className="h-4 w-4" />;
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return <Clock className="h-4 w-4" />;
     }
   };
 
-  const getParameterIcon = (param: string) => {
-    switch (param) {
-      case "temperature":
-        return <Thermometer className="h-5 w-5 text-orange-500" />;
-      case "ph":
-        return <Droplets className="h-5 w-5 text-blue-500" />;
-      case "oxygen":
-        return <Activity className="h-5 w-5 text-green-500" />;
-      case "salinity":
-        return <Waves className="h-5 w-5 text-teal-500" />;
-      default:
-        return <Droplets className="h-5 w-5 text-blue-500" />;
+  const getBasinStatus = (basin: Basin) => {
+    if (!basin.sensorData || basin.sensorData.length === 0) return "offline";
+
+    const latestReading = basin.sensorData[0];
+    const now = new Date();
+    const lastUpdate = new Date(latestReading.timestamp);
+    const hoursSinceUpdate =
+      (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceUpdate > 2) return "offline";
+
+    // Check for critical parameters
+    if (
+      latestReading.ph < 6.0 ||
+      latestReading.ph > 8.5 ||
+      latestReading.temperature < 18 ||
+      latestReading.temperature > 30 ||
+      latestReading.oxygen < 4.0 ||
+      latestReading.salinity > 35
+    ) {
+      return "critical";
+    }
+
+    // Check for warning parameters
+    if (
+      latestReading.ph < 6.5 ||
+      latestReading.ph > 8.0 ||
+      latestReading.temperature < 20 ||
+      latestReading.temperature > 28 ||
+      latestReading.oxygen < 5.0 ||
+      latestReading.salinity > 30
+    ) {
+      return "warning";
+    }
+
+    return "normal";
+  };
+
+  const getTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInMinutes = Math.floor(
+      (now.getTime() - time.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} min`;
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h`;
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}j`;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Chargement des données du bassin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !basin) {
+    return (
+      <div className="p-6 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error || "Bassin non trouvé"}</p>
+          <Link href="/basins">
+            <Button>Retour aux Bassins</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const status = getBasinStatus(basin);
+  const latestReading = basin.sensorData?.[0];
 
   return (
     <div className="p-6 space-y-6 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-blue-100">
-        <div className="flex items-center gap-4 mb-4">
-          <Link href="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-2xl bg-transparent border-gray-200"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800">
-              {basinData.name}
-            </h1>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-gray-600">Statut:</span>
-              <Badge
-                className={`${getStatusColor(
-                  basinData.status
-                )} rounded-full px-3 py-1 text-sm font-medium border`}
-              >
-                {t(`status.${basinData.status}`)}
-              </Badge>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-600">ID: {basinData.id}</span>
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-100">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/basins">
+              <Button variant="outline" size="sm" className="rounded-xl">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800">{basin.name}</h1>
+              <p className="text-gray-600 text-lg">
+                {basin.farm.name} - {basin.farm.location}
+              </p>
             </div>
           </div>
-          <Button className="rounded-2xl bg-blue-600 hover:bg-blue-700">
-            <Download className="h-4 w-4 mr-2" />
-            {t("basin.export")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Badge
+              className={`${getStatusColor(
+                status
+              )} rounded-full px-4 py-2 text-sm font-medium border`}
+            >
+              {getStatusIcon(status)}
+              <span className="ml-2 capitalize">{status}</span>
+            </Badge>
+            <Button variant="outline" size="sm" className="rounded-xl">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualiser
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-blue-50 rounded-2xl p-4">
+            <div className="text-sm text-blue-600 mb-1">Type</div>
+            <div className="text-lg font-semibold text-blue-800 capitalize">
+              {basin.type}
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-2xl p-4">
+            <div className="text-sm text-green-600 mb-1">Volume</div>
+            <div className="text-lg font-semibold text-green-800">
+              {basin.volume || "N/A"} m³
+            </div>
+          </div>
+          <div className="bg-purple-50 rounded-2xl p-4">
+            <div className="text-sm text-purple-600 mb-1">Profondeur</div>
+            <div className="text-lg font-semibold text-purple-800">
+              {basin.depth || "N/A"} m
+            </div>
+          </div>
+          <div className="bg-orange-50 rounded-2xl p-4">
+            <div className="text-sm text-orange-600 mb-1">Dernière mesure</div>
+            <div className="text-lg font-semibold text-orange-800">
+              {latestReading ? getTimeAgo(latestReading.timestamp) : "N/A"}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Current Values */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="rounded-3xl border-orange-100 bg-gradient-to-br from-orange-50 to-orange-100 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-orange-700">
-              {t("param.temperature")}
+      {/* Current Parameters */}
+      {latestReading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="rounded-3xl border-orange-100 bg-gradient-to-br from-orange-50 to-orange-100">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-orange-700">
+                  Température
+                </CardTitle>
+                <Thermometer className="h-6 w-6 text-orange-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-800 mb-1">
+                {latestReading.temperature.toFixed(1)}°C
+              </div>
+              <div className="text-xs text-orange-600">Optimal: 18-25°C</div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-blue-700">
+                  pH
+                </CardTitle>
+                <Droplets className="h-6 w-6 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-800 mb-1">
+                {latestReading.ph.toFixed(1)}
+              </div>
+              <div className="text-xs text-blue-600">Optimal: 6.5-8.5</div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-green-100 bg-gradient-to-br from-green-50 to-green-100">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-green-700">
+                  Oxygène
+                </CardTitle>
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-800 mb-1">
+                {latestReading.oxygen.toFixed(1)}
+              </div>
+              <div className="text-xs text-green-600">
+                mg/L - Optimal: &gt;5.0
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-teal-700">
+                  Salinité
+                </CardTitle>
+                <Waves className="h-6 w-6 text-teal-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-teal-800 mb-1">
+                {latestReading.salinity.toFixed(1)}
+              </div>
+              <div className="text-xs text-teal-600">ppt - Selon type</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Alerts */}
+      {basin.alerts && basin.alerts.length > 0 && (
+        <Card className="rounded-3xl border-red-100 bg-gradient-to-br from-red-50 to-red-100">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-red-800 flex items-center gap-2">
+              <AlertTriangle className="h-6 w-6" />
+              Alertes Actives ({basin.alerts.length})
             </CardTitle>
-            <Thermometer className="h-6 w-6 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-800">
-              {basinData.temperature}°C
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700">
-              {t("param.ph")}
-            </CardTitle>
-            <Droplets className="h-6 w-6 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-800">
-              {basinData.ph}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-green-100 bg-gradient-to-br from-green-50 to-green-100 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-green-700">
-              {t("param.oxygen")}
-            </CardTitle>
-            <Activity className="h-6 w-6 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-800">
-              {basinData.oxygen} mg/L
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-teal-700">
-              {t("param.salinity")}
-            </CardTitle>
-            <Waves className="h-6 w-6 text-teal-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-teal-800">
-              {basinData.salinity} ppt
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="history" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-gray-100 p-1">
-          <TabsTrigger
-            value="history"
-            className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm"
-          >
-            {t("basin.history")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="alerts"
-            className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm"
-          >
-            {t("basin.alerts")}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="history" className="space-y-6">
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="rounded-3xl border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Thermometer className="h-5 w-5 text-orange-500" />
-                  {t("param.temperature")} (24h)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={mockHistoricalData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#666" fontSize={12} />
-                    <YAxis stroke="#666" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="temperature"
-                      stroke="#f97316"
-                      strokeWidth={3}
-                      dot={{ fill: "#f97316", strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-3xl border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Droplets className="h-5 w-5 text-blue-500" />
-                  {t("param.ph")} (24h)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={mockHistoricalData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#666" fontSize={12} />
-                    <YAxis stroke="#666" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="ph"
-                      stroke="#3b82f6"
-                      strokeWidth={3}
-                      dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-3xl border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-green-500" />
-                  {t("param.oxygen")} (24h)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={mockHistoricalData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#666" fontSize={12} />
-                    <YAxis stroke="#666" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="oxygen"
-                      stroke="#10b981"
-                      strokeWidth={3}
-                      dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-3xl border-gray-100 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Waves className="h-5 w-5 text-teal-500" />
-                  {t("param.salinity")} (24h)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={mockHistoricalData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#666" fontSize={12} />
-                    <YAxis stroke="#666" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="salinity"
-                      stroke="#14b8a6"
-                      strokeWidth={3}
-                      dot={{ fill: "#14b8a6", strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="alerts" className="space-y-4">
-          {alerts.map((alert) => (
-            <Card
-              key={alert.id}
-              className="rounded-3xl border-gray-100 shadow-sm"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {getParameterIcon(alert.type)}
+            <div className="space-y-3">
+              {basin.alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl p-4 border border-red-200"
+                >
+                  <div className="flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-gray-800">
-                          {alert.message}
-                        </h3>
-                        <Badge
-                          className={`${getAlertColor(
-                            alert.level
-                          )} rounded-full px-3 py-1 text-xs font-medium border`}
-                        >
-                          {alert.level === "warning" ? "Alerte" : "Critique"}
-                        </Badge>
-                        {alert.resolved && (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 rounded-full px-3 py-1 text-xs font-medium border">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Résolu
-                          </Badge>
-                        )}
+                      <div className="font-semibold text-red-800">
+                        {alert.message}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        Valeur: {alert.value} • {alert.time}
+                      <div className="text-sm text-red-600">
+                        {alert.type} - Sévérité: {alert.severity}
                       </div>
                     </div>
+                    <Badge className="bg-red-100 text-red-700">
+                      {alert.severity}
+                    </Badge>
                   </div>
-                  {!alert.resolved && (
-                    <Button
-                      size="sm"
-                      onClick={() => resolveAlert(alert.id)}
-                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      {t("alerts.resolve")}
-                    </Button>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-4">
+        <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+          <Settings className="h-4 w-4 mr-2" />
+          Configurer
+        </Button>
+        <Button variant="outline" className="rounded-xl">
+          <Download className="h-4 w-4 mr-2" />
+          Exporter Données
+        </Button>
+        <Button variant="outline" className="rounded-xl">
+          <TrendingUp className="h-4 w-4 mr-2" />
+          Historique
+        </Button>
+      </div>
     </div>
   );
 }

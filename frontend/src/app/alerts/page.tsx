@@ -2,6 +2,6 @@
 
 import { AlertsPage } from "@/components/alerts-page";
 
-export default function Alerts() {
+export default function AlertsPageRoute() {
   return <AlertsPage />;
 }

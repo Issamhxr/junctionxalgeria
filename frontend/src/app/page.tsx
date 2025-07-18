@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const { isAuthenticated, loading } = useAuth();
-  const router = useRouter();
+  const router = useRouter(); //bkhb
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {

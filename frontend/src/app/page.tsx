@@ -1,32 +1,30 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/contexts/auth-context";
-import { DashboardHome } from "@/components/dashboard-home";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store';
 
-export default function Page() {
-  const { isAuthenticated, loading } = useAuth();
-  const router = useRouter(); //bkhb
+export default function HomePage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
 
-  // useEffect(() => {
-  //   if (!loading && !isAuthenticated) {
-  //     router.push("/login");
-  //   }
-  // }, [isAuthenticated, loading, router]);
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
-
-  return <DashboardHome />;
+  return null;
 }

@@ -88,10 +88,10 @@ class User(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationships
-    farm_users = relationship("FarmUser", back_populates="user")
+    farm_users = relationship("FarmUser", back_populates="user", foreign_keys=lambda: FarmUser.user_id)
     ponds = relationship("Pond", back_populates="user")
     sensor_data = relationship("SensorData", back_populates="user")
-    alerts = relationship("Alert", back_populates="user")
+    alerts = relationship("Alert", back_populates="user", foreign_keys=lambda: Alert.user_id)
     sessions = relationship("UserSession", back_populates="user")
     activities = relationship("UserActivity", back_populates="user")
     preferences = relationship("UserPreferences", back_populates="user", uselist=False)
@@ -149,7 +149,8 @@ class FarmUser(Base):
 
     # Relationships
     farm = relationship("Farm", back_populates="farm_users")
-    user = relationship("User", back_populates="farm_users")
+    user = relationship("User", back_populates="farm_users", foreign_keys=[user_id])
+    assigned_by_user = relationship("User", foreign_keys=[assigned_by])
 
 class Pond(Base):
     __tablename__ = "ponds"
@@ -234,7 +235,8 @@ class Alert(Base):
     # Relationships
     farm = relationship("Farm", back_populates="alerts")
     pond = relationship("Pond", back_populates="alerts")
-    user = relationship("User", back_populates="alerts")
+    user = relationship("User", back_populates="alerts", foreign_keys=[user_id])
+    resolved_by_user = relationship("User", foreign_keys=[resolved_by])
 
 class Threshold(Base):
     __tablename__ = "thresholds"

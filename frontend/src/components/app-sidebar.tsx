@@ -12,6 +12,7 @@ import {
   BarChart3,
   LogOut,
   Shield,
+  Waves,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -67,12 +68,6 @@ export function AppSidebar() {
           title: "Centres",
           url: "/centres",
           icon: Building,
-          roles: ["ADMIN"],
-        },
-        {
-          title: "Utilisateurs",
-          url: "/users",
-          icon: Users,
           roles: ["ADMIN"],
         },
         {

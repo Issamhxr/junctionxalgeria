@@ -51,19 +51,17 @@ import {
   Eye,
   EyeOff,
   TestTube,
-  X, // Add the missing X icon
+  X,
   Upload,
+  Download, // Add the missing Download icon import
   Trash2,
   Users,
 } from "lucide-react";
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
-  const {
-    showToast,
-    requestNotificationPermission,
-    subscribeToNotifications,
-  } = useNotifications();
+  const { showToast, requestNotificationPermission, subscribeToNotifications } =
+    useNotifications();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -444,7 +442,8 @@ export function SettingsPage() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-              </CardContent>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Security */}
@@ -996,7 +995,10 @@ export function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {Object.entries(thresholds).map(([param, values]) => (
-                    <div key={param} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                    <div
+                      key={param}
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl"
+                    >
                       <div className="flex items-center gap-2 mb-4">
                         {param === "temperature" && (
                           <Thermometer className="h-5 w-5 text-red-500" />
@@ -1014,13 +1016,19 @@ export function SettingsPage() {
                           <Eye className="h-5 w-5 text-purple-500" />
                         )}
                         <h3 className="font-semibold text-gray-800 dark:text-white capitalize">
-                          {param === "ph" ? "pH" : param === "turbidity" ? "Turbidité (MES)" : param}
+                          {param === "ph"
+                            ? "pH"
+                            : param === "turbidity"
+                            ? "Turbidité (MES)"
+                            : param}
                         </h3>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">Min</Label>
+                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">
+                            Min
+                          </Label>
                           <Input
                             type="number"
                             value={values.min}
@@ -1037,7 +1045,9 @@ export function SettingsPage() {
                           />
                         </div>
                         <div className="flex items-center gap-3">
-                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">Max</Label>
+                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">
+                            Max
+                          </Label>
                           <Input
                             type="number"
                             value={values.max}
@@ -1054,7 +1064,9 @@ export function SettingsPage() {
                           />
                         </div>
                         <div className="flex items-center gap-3">
-                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">Critique</Label>
+                          <Label className="w-16 text-xs text-gray-700 dark:text-gray-300">
+                            Critique
+                          </Label>
                           <Input
                             type="number"
                             value={values.critical}
@@ -1111,7 +1123,9 @@ export function SettingsPage() {
                           }
                           className="w-20 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                         />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">jours</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          jours
+                        </span>
                       </div>
                     </div>
 
@@ -1673,27 +1687,32 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-900/50 rounded-2xl">
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Testez le système de notifications pour vérifier son bon fonctionnement
+                Testez le système de notifications pour vérifier son bon
+                fonctionnement
               </p>
-              
+
               <div className="space-y-3">
                 <Button
-                  onClick={() => showToast("Test de notification réussi! 🎉", "success")}
+                  onClick={() =>
+                    showToast("Test de notification réussi! 🎉", "success")
+                  }
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Test Toast - Succès
                 </Button>
-                
+
                 <Button
-                  onClick={() => showToast("Attention: Test d'alerte", "warning")}
-                  variant="outline" 
+                  onClick={() =>
+                    showToast("Attention: Test d'alerte", "warning")
+                  }
+                  variant="outline"
                   className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
                 >
                   <AlertTriangle className="h-4 w-4 mr-2" />
                   Test Toast - Avertissement
                 </Button>
-                
+
                 <Button
                   onClick={() => showToast("Erreur: Test d'erreur", "error")}
                   variant="outline"
@@ -1702,7 +1721,7 @@ export function SettingsPage() {
                   <X className="h-4 w-4 mr-2" />
                   Test Toast - Erreur
                 </Button>
-                
+
                 <Button
                   onClick={() => showToast("Information: Test d'info", "info")}
                   variant="outline"
@@ -1711,7 +1730,7 @@ export function SettingsPage() {
                   <Bell className="h-4 w-4 mr-2" />
                   Test Toast - Info
                 </Button>
-                
+
                 <div className="border-t pt-3 mt-4">
                   <Button
                     onClick={async () => {
@@ -1722,7 +1741,10 @@ export function SettingsPage() {
                           showToast("Notifications push activées!", "success");
                         }
                       } else {
-                        showToast("Permission de notification refusée", "error");
+                        showToast(
+                          "Permission de notification refusée",
+                          "error"
+                        );
                       }
                     }}
                     variant="outline"

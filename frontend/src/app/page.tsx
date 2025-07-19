@@ -7,16 +7,16 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function Page() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter(); //bkhb
 
   // useEffect(() => {
-  //   if (!loading && !isAuthenticated) {
+  //   if (!isLoading && !isAuthenticated) {
   //     router.push("/login");
   //   }
-  // }, [isAuthenticated, loading, router]);
+  // }, [isAuthenticated, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

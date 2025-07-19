@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-context";
+import { useLanguage } from "@/components/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,9 +29,12 @@ import {
 import { useEffect, useState } from "react";
 import { apiClient, Basin } from "@/lib/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function BasinsPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const router = useRouter();
   const [basins, setBasins] = useState<Basin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +273,10 @@ export default function BasinsPage() {
   // Check if user has permission to manage basins
   const canManageBasins = user?.role === "FARMER" || user?.role === "ADMIN";
 
+  const handleBasinClick = (basinId: string) => {
+    router.push(`/basin/${basinId}`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -429,41 +437,41 @@ export default function BasinsPage() {
                     {basin.name}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {basin.location}
+                    {basin.farm.location}
                   </p>
                 </div>
                 <Badge
                   className={`${getStatusColor(
-                    basin.status
+                    status
                   )} text-xs px-3 py-1 rounded-full font-medium border`}
                 >
-                  {basin.status.charAt(0).toUpperCase() + basin.status.slice(1)}
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border dark:border-blue-800/30">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {basin.waterLevel}%
+                    {latestReading?.waterLevel?.toFixed(1) || "--"}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    {t("waterLevel")}
+                    Niveau (m)
                   </div>
                 </div>
                 <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border dark:border-green-800/30">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {basin.temperature}°C
+                    {latestReading?.temperature?.toFixed(1) || "--"}°C
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    {t("temperature")}
+                    Température
                   </div>
                 </div>
                 <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border dark:border-purple-800/30">
                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {basin.ph}
+                    {latestReading?.ph?.toFixed(1) || "--"}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    pH {t("level")}
+                    pH
                   </div>
                 </div>
               </div>
@@ -471,7 +479,17 @@ export default function BasinsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                   <Clock className="h-4 w-4 mr-1" />
-                  {basin.lastUpdate}
+                  {latestReading
+                    ? new Date(latestReading.timestamp).toLocaleString(
+                        "fr-FR",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )
+                    : "Aucune donnée"}
                 </div>
                 <Button
                   variant="outline"
@@ -479,7 +497,7 @@ export default function BasinsPage() {
                   onClick={() => handleBasinClick(basin.id)}
                   className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
-                  {t("viewDetails")}
+                  Voir détails
                 </Button>
               </div>
             </Card>

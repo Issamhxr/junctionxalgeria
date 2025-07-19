@@ -57,6 +57,7 @@ const generateSensorReading = () => ({
   ammonia: generateRandomValue(0, 5, 2),
   nitrite: generateRandomValue(0, 3, 2),
   nitrate: generateRandomValue(0, 40, 1),
+  waterLevel: generateRandomValue(1.0, 4.0, 1),
   timestamp: new Date().toISOString(),
 });
 

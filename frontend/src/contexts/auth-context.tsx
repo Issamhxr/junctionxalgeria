@@ -16,7 +16,14 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: "ADMIN" | "FARMER" | "TECHNICIAN" | "VIEWER";
+  role:
+    | "ADMIN"
+    | "CENTRE_CHIEF"
+    | "BASE_CHIEF"
+    | "OPERATOR"
+    | "FARMER"
+    | "TECHNICIAN"
+    | "VIEWER";
   isActive: boolean;
   createdAt: string;
 }

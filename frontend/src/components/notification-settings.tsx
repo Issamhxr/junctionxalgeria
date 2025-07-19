@@ -142,10 +142,6 @@ export const NotificationSettingsComponent: React.FC = () => {
         badge: "/icons/badge.png",
         tag: "test-notification",
         requireInteraction: true,
-        actions: [
-          { action: "view", title: "Voir l'alerte" },
-          { action: "dismiss", title: "Ignorer" },
-        ],
       });
     }
 

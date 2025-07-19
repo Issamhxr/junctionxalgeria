@@ -9,7 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Thermometer,
   Droplets,
@@ -32,7 +38,7 @@ export function DataEntryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  
+
   // Form data
   const [formData, setFormData] = useState({
     temperature: "",
@@ -68,8 +74,8 @@ export function DataEntryPage() {
             farm: {
               id: "farm1",
               name: "Ferme Aquacole Nord",
-              location: "Alger"
-            }
+              location: "Alger",
+            },
           },
           {
             id: "pond2",
@@ -80,8 +86,8 @@ export function DataEntryPage() {
             farm: {
               id: "farm1",
               name: "Ferme Aquacole Nord",
-              location: "Alger"
-            }
+              location: "Alger",
+            },
           },
           {
             id: "pond3",
@@ -92,9 +98,9 @@ export function DataEntryPage() {
             farm: {
               id: "farm2",
               name: "Ferme Aquacole Sud",
-              location: "Oran"
-            }
-          }
+              location: "Oran",
+            },
+          },
         ]);
       } finally {
         setLoading(false);
@@ -105,43 +111,52 @@ export function DataEntryPage() {
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedBasin) {
       alert("Veuillez sélectionner un bassin");
       return;
     }
 
-    if (!formData.temperature || !formData.ph || !formData.oxygen || !formData.salinity) {
+    if (
+      !formData.temperature ||
+      !formData.ph ||
+      !formData.oxygen ||
+      !formData.salinity
+    ) {
       alert("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
     try {
       setSaving(true);
-      
+
       const sensorData = {
         temperature: parseFloat(formData.temperature),
         ph: parseFloat(formData.ph),
         oxygen: parseFloat(formData.oxygen),
         salinity: parseFloat(formData.salinity),
-        turbidity: formData.turbidity ? parseFloat(formData.turbidity) : undefined,
+        turbidity: formData.turbidity
+          ? parseFloat(formData.turbidity)
+          : undefined,
         ammonia: formData.ammonia ? parseFloat(formData.ammonia) : undefined,
         nitrite: formData.nitrite ? parseFloat(formData.nitrite) : undefined,
         nitrate: formData.nitrate ? parseFloat(formData.nitrate) : undefined,
-        waterLevel: formData.waterLevel ? parseFloat(formData.waterLevel) : undefined,
+        waterLevel: formData.waterLevel
+          ? parseFloat(formData.waterLevel)
+          : undefined,
         notes: formData.notes || undefined,
       };
 
       await apiClient.addSensorData(selectedBasin, sensorData);
-      
+
       // Reset form
       setFormData({
         temperature: "",
@@ -155,10 +170,9 @@ export function DataEntryPage() {
         waterLevel: "",
         notes: "",
       });
-      
+
       setLastSaved(new Date().toLocaleTimeString());
       alert("Données sauvegardées avec succès!");
-      
     } catch (error) {
       console.error("Error saving data:", error);
       alert("Erreur lors de la sauvegarde");
@@ -169,9 +183,9 @@ export function DataEntryPage() {
 
   const getParameterStatus = (value: string, parameter: string) => {
     if (!value) return "neutral";
-    
+
     const numValue = parseFloat(value);
-    
+
     switch (parameter) {
       case "temperature":
         if (numValue < 18 || numValue > 30) return "critical";
@@ -207,21 +221,27 @@ export function DataEntryPage() {
     }
   };
 
-  const selectedBasinData = basins.find(b => b.id === selectedBasin);
+  const selectedBasinData = basins.find((b) => b.id === selectedBasin);
 
   if (loading) {
     return (
       <div className="p-6 min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-gray-600 dark:text-gray-300" />
-          <p className="text-gray-600 dark:text-gray-300">Chargement des bassins...</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            Chargement des bassins...
+          </p>
         </div>
       </div>
     );
   }
 
   // Check if user has permission to enter data
-  if (user?.role !== "OPERATOR" && user?.role !== "FARMER" && user?.role !== "ADMIN") {
+  if (
+    user?.role !== "OPERATOR" &&
+    user?.role !== "FARMER" &&
+    user?.role !== "ADMIN"
+  ) {
     return (
       <div className="p-6 text-center bg-gray-50 dark:bg-gray-900 min-h-screen">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -236,7 +256,9 @@ export function DataEntryPage() {
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-blue-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100">Saisie des Données</h1>
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100">
+              Saisie des Données
+            </h1>
             <p className="text-gray-600 dark:text-gray-300 text-lg">
               Enregistrement des mesures de qualité d'eau
             </p>
@@ -266,7 +288,10 @@ export function DataEntryPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="basin-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="basin-select"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Bassin
               </Label>
               <Select value={selectedBasin} onValueChange={setSelectedBasin}>
@@ -290,7 +315,7 @@ export function DataEntryPage() {
                 <div className="text-sm text-blue-600 dark:text-blue-400">
                   <p>Ferme: {selectedBasinData.farm.name}</p>
                   <p>Type: {selectedBasinData.type}</p>
-                  <p>Volume: {selectedBasinData.volume || 'N/A'} m³</p>
+                  <p>Volume: {selectedBasinData.volume || "N/A"} m³</p>
                 </div>
               </div>
             )}
@@ -311,7 +336,10 @@ export function DataEntryPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="temperature" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="temperature"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Température (°C) *
                 </Label>
                 <Input
@@ -319,15 +347,24 @@ export function DataEntryPage() {
                   type="number"
                   step="0.1"
                   value={formData.temperature}
-                  onChange={(e) => handleInputChange("temperature", e.target.value)}
-                  className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.temperature, "temperature"))}`}
+                  onChange={(e) =>
+                    handleInputChange("temperature", e.target.value)
+                  }
+                  className={`mt-2 rounded-xl ${getStatusColor(
+                    getParameterStatus(formData.temperature, "temperature")
+                  )}`}
                   placeholder="ex: 22.5"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: 18-30°C</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: 18-30°C
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="ph" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="ph"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   pH *
                 </Label>
                 <Input
@@ -336,14 +373,21 @@ export function DataEntryPage() {
                   step="0.1"
                   value={formData.ph}
                   onChange={(e) => handleInputChange("ph", e.target.value)}
-                  className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.ph, "ph"))}`}
+                  className={`mt-2 rounded-xl ${getStatusColor(
+                    getParameterStatus(formData.ph, "ph")
+                  )}`}
                   placeholder="ex: 7.2"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: 6.5-8.5</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: 6.5-8.5
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="oxygen" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="oxygen"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Oxygène Dissous (mg/L) *
                 </Label>
                 <Input
@@ -352,14 +396,21 @@ export function DataEntryPage() {
                   step="0.1"
                   value={formData.oxygen}
                   onChange={(e) => handleInputChange("oxygen", e.target.value)}
-                  className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.oxygen, "oxygen"))}`}
+                  className={`mt-2 rounded-xl ${getStatusColor(
+                    getParameterStatus(formData.oxygen, "oxygen")
+                  )}`}
                   placeholder="ex: 6.8"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: >5.0 mg/L</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: {">"}5.0 mg/L
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="salinity" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="salinity"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Salinité (ppt) *
                 </Label>
                 <Input
@@ -367,11 +418,17 @@ export function DataEntryPage() {
                   type="number"
                   step="0.1"
                   value={formData.salinity}
-                  onChange={(e) => handleInputChange("salinity", e.target.value)}
-                  className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.salinity, "salinity"))}`}
+                  onChange={(e) =>
+                    handleInputChange("salinity", e.target.value)
+                  }
+                  className={`mt-2 rounded-xl ${getStatusColor(
+                    getParameterStatus(formData.salinity, "salinity")
+                  )}`}
                   placeholder="ex: 34.5"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Selon le type de bassin</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Selon le type de bassin
+                </p>
               </div>
             </div>
           </CardContent>
@@ -388,7 +445,10 @@ export function DataEntryPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="turbidity" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="turbidity"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   MES/Turbidité (NTU)
                 </Label>
                 <Input
@@ -396,15 +456,22 @@ export function DataEntryPage() {
                   type="number"
                   step="0.1"
                   value={formData.turbidity}
-                  onChange={(e) => handleInputChange("turbidity", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("turbidity", e.target.value)
+                  }
                   className="mt-2 rounded-xl"
                   placeholder="ex: 2.5"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;5.0 NTU</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: &lt;5.0 NTU
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="ammonia" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="ammonia"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Ammoniac (mg/L)
                 </Label>
                 <Input
@@ -416,11 +483,16 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 0.15"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;0.2 mg/L</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: &lt;0.2 mg/L
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="nitrite" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="nitrite"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Nitrite (mg/L)
                 </Label>
                 <Input
@@ -432,11 +504,16 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 0.05"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;0.1 mg/L</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: &lt;0.1 mg/L
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="nitrate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="nitrate"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Nitrate (mg/L)
                 </Label>
                 <Input
@@ -448,11 +525,16 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 1.2"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;40 mg/L</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Optimal: &lt;40 mg/L
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="waterLevel" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="waterLevel"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Niveau d'eau (m)
                 </Label>
                 <Input
@@ -462,11 +544,15 @@ export function DataEntryPage() {
                   min="1.0"
                   max="5.0"
                   value={formData.waterLevel}
-                  onChange={(e) => handleInputChange("waterLevel", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("waterLevel", e.target.value)
+                  }
                   className="mt-2 rounded-xl"
                   placeholder="ex: 2.5"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: 1.0 - 5.0 m</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Range: 1.0 - 5.0 m
+                </p>
               </div>
             </div>
           </CardContent>
@@ -481,7 +567,10 @@ export function DataEntryPage() {
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label
+                htmlFor="notes"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Notes
               </Label>
               <Textarea

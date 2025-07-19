@@ -1164,11 +1164,7 @@ export default function ReportsPage() {
       </Tabs>
 
       {/* Share Report Dialog */}
-      <Dialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        className="relative z-50"
-      >
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="max-w-lg p-6 mx-auto rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-gray-800">
@@ -1322,11 +1318,7 @@ export default function ReportsPage() {
       </Dialog>
 
       {/* Export Report Dialog */}
-      <Dialog
-        open={exportDialogOpen}
-        onOpenChange={setExportDialogOpen}
-        className="relative z-50"
-      >
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent className="max-w-lg p-6 mx-auto rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-gray-800">

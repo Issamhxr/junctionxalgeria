@@ -10,7 +10,7 @@ This is a FastAPI-based backend for the JunctionX Algeria Challenge 4 aquacultur
 - 👥 **User Management**: Role-based access control
 - 🏢 **Farm Management**: Multi-farm support
 - 🔒 **Authentication**: JWT-based authentication
-- 📱 **REST API**: RESTful API endpoints
+- 📱 **REST API**: RESTful API endpoints nn
 
 ## Tech Stack
 

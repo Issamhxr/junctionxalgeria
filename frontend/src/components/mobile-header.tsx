@@ -211,7 +211,9 @@ export function MobileHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className={`h-7 w-7 p-0 ${language === "ar" ? "-mr-1" : "-ml-1"}`}
+              className={`hidden sm:block h-7 w-7 p-0 ${
+                language === "ar" ? "-mr-1" : "-ml-1"
+              }`}
             >
               <Menu className="h-4 w-4" />
               <span className="sr-only">Toggle Menu</span>

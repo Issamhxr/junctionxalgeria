@@ -174,9 +174,20 @@ export function MobileBottomNav() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg md:hidden ${
+      className={`mobile-nav-fixed fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg md:hidden w-full ${
         language === "ar" ? "rtl" : ""
       }`}
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: "100vw",
+        zIndex: 100,
+        transform: "translateZ(0)", // Force hardware acceleration
+        backfaceVisibility: "hidden", // Prevent rendering glitches
+        willChange: "transform", // Optimize for position changes
+      }}
     >
       <div
         className={`flex items-center justify-around px-2 py-2 ${

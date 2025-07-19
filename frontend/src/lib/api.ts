@@ -46,7 +46,7 @@ class ApiClient {
       data: {
         ponds: [
           {
-            id: "1",
+            id: "basin-1",
             name: "Bassin A1",
             type: "freshwater",
             volume: 1000,
@@ -89,7 +89,7 @@ class ApiClient {
             _count: { alerts: 1 },
           },
           {
-            id: "2",
+            id: "basin-2",
             name: "Bassin B2",
             type: "saltwater",
             volume: 1500,
@@ -123,6 +123,134 @@ class ApiClient {
             alerts: [],
             _count: { alerts: 0 },
           },
+          {
+            id: "basin-3",
+            name: "Bassin C3",
+            type: "brackish",
+            volume: 800,
+            depth: 2.0,
+            temperature: 26.2,
+            ph: 7.8,
+            oxygen: 6.9,
+            salinity: 15.5,
+            ammonia: 0.7,
+            nitrite: 0.2,
+            nitrate: 8.0,
+            waterLevel: 1.8,
+            farm: {
+              id: "farm3",
+              name: "Ferme Mixte Est",
+              location: "Constantine",
+            },
+            sensorData: [
+              {
+                temperature: 26.2,
+                ph: 7.8,
+                oxygen: 6.9,
+                salinity: 15.5,
+                ammonia: 0.7,
+                nitrite: 0.2,
+                nitrate: 8.0,
+                waterLevel: 1.8,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [
+              {
+                id: "alert3",
+                type: "oxygen",
+                severity: "warning",
+                message: "Niveau d'oxygène à surveiller",
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: "alert4",
+                type: "ammonia",
+                severity: "critical",
+                message: "Taux d'ammoniaque élevé",
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            _count: { alerts: 2 },
+          },
+          {
+            id: "basin-4",
+            name: "Bassin D4",
+            type: "freshwater",
+            volume: 1200,
+            depth: 2.8,
+            temperature: 23.1,
+            ph: 6.9,
+            oxygen: 9.2,
+            salinity: 0.2,
+            ammonia: 0.4,
+            nitrite: 0.08,
+            nitrate: 4.5,
+            waterLevel: 2.1,
+            farm: {
+              id: "farm1",
+              name: "Ferme Aquacole Nord",
+              location: "Alger",
+            },
+            sensorData: [
+              {
+                temperature: 23.1,
+                ph: 6.9,
+                oxygen: 9.2,
+                salinity: 0.2,
+                ammonia: 0.4,
+                nitrite: 0.08,
+                nitrate: 4.5,
+                waterLevel: 2.1,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [],
+            _count: { alerts: 0 },
+          },
+          {
+            id: "basin-5",
+            name: "Bassin E5",
+            type: "saltwater",
+            volume: 2000,
+            depth: 3.5,
+            temperature: 21.5,
+            ph: 8.3,
+            oxygen: 7.1,
+            salinity: 32.8,
+            ammonia: 0.2,
+            nitrite: 0.03,
+            nitrate: 2.8,
+            waterLevel: 2.9,
+            farm: {
+              id: "farm2",
+              name: "Ferme Marine Sud",
+              location: "Oran",
+            },
+            sensorData: [
+              {
+                temperature: 21.5,
+                ph: 8.3,
+                oxygen: 7.1,
+                salinity: 32.8,
+                ammonia: 0.2,
+                nitrite: 0.03,
+                nitrate: 2.8,
+                waterLevel: 2.9,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [
+              {
+                id: "alert5",
+                type: "ph",
+                severity: "warning",
+                message: "pH légèrement élevé",
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            _count: { alerts: 1 },
+          },
         ],
       },
     };
@@ -138,7 +266,47 @@ class ApiClient {
     const pond = ponds.data.ponds.find((p) => p.id === id);
 
     if (!pond) {
-      throw new Error("Pond not found");
+      // Return a default basin for any missing ID to make it fully static
+      return {
+        success: true,
+        data: {
+          pond: {
+            id: id,
+            name: `Bassin ${id.replace("basin-", "").toUpperCase()}`,
+            type: "freshwater",
+            volume: 1000,
+            depth: 2.5,
+            temperature: 24.0,
+            ph: 7.0,
+            oxygen: 8.0,
+            salinity: 0.1,
+            ammonia: 0.5,
+            nitrite: 0.1,
+            nitrate: 5.0,
+            waterLevel: 1.5,
+            farm: {
+              id: "farm1",
+              name: "Ferme Aquacole",
+              location: "Alger",
+            },
+            sensorData: [
+              {
+                temperature: 24.0,
+                ph: 7.0,
+                oxygen: 8.0,
+                salinity: 0.1,
+                ammonia: 0.5,
+                nitrite: 0.1,
+                nitrate: 5.0,
+                waterLevel: 1.5,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [],
+            _count: { alerts: 0 },
+          },
+        },
+      };
     }
 
     return {

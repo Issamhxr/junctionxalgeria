@@ -13,6 +13,7 @@ import {
   LogOut,
   Shield,
   Waves,
+  Activity, // Add Activity icon for sensor data
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -145,6 +146,14 @@ export function AppSidebar() {
       );
     }
 
+    // Sensor Data item for all roles
+    const sensorDataItem = {
+      title: "Données Capteurs",
+      url: "/sensor-data",
+      icon: Activity,
+      roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
+    };
+
     const settingsItem = {
       title: t("nav.settings"),
       url: "/settings",
@@ -152,7 +161,7 @@ export function AppSidebar() {
       roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
     };
 
-    return [...baseItems, ...roleSpecificItems, settingsItem];
+    return [...baseItems, ...roleSpecificItems, sensorDataItem, settingsItem];
   };
 
   const items = getNavigationItems();

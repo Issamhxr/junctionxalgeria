@@ -19,15 +19,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/components/language-context";
 import { useTheme } from "@/contexts/theme-context";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Waves,
+  AlertTriangle,
+  Settings,
+  Building,
+  MapPin,
+  Database,
+  Activity,
+  BarChart3,
+  Users,
+} from "lucide-react";
 
 export function MobileHeader() {
   const { user, logout } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ""}${
@@ -38,17 +54,149 @@ export function MobileHeader() {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "ADMIN":
-        return "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300";
-      case "FARMER":
-        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300";
-      case "TECHNICIAN":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
-      case "VIEWER":
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+        return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-700";
+      case "CENTRE_CHIEF":
+        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700";
+      case "BASE_CHIEF":
+        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700";
+      case "OPERATOR":
+        return "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700";
       default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+        return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
     }
   };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "Administrateur";
+      case "CENTRE_CHIEF":
+        return "Chef de Centre";
+      case "BASE_CHIEF":
+        return "Chef de Base";
+      case "OPERATOR":
+        return "Opérateur";
+      default:
+        return role;
+    }
+  };
+
+  // Get navigation items for mobile menu sheet
+  const getNavigationItems = () => {
+    const baseItems = [
+      {
+        title: "Tableau de Bord",
+        url: "/",
+        icon: LayoutDashboard,
+        roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
+      },
+      {
+        title: "Alertes",
+        url: "/alerts",
+        icon: AlertTriangle,
+        roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
+      },
+    ];
+
+    const roleSpecificItems = [];
+
+    // Admin specific items
+    if (user?.role === "ADMIN") {
+      roleSpecificItems.push(
+        {
+          title: "Centres",
+          url: "/centres",
+          icon: Building,
+          roles: ["ADMIN"],
+        },
+        {
+          title: "Rapports",
+          url: "/reports",
+          icon: BarChart3,
+          roles: ["ADMIN"],
+        }
+      );
+    }
+
+    // Centre Chief specific items
+    if (user?.role === "CENTRE_CHIEF") {
+      roleSpecificItems.push(
+        {
+          title: "Mes Bases",
+          url: "/bases",
+          icon: MapPin,
+          roles: ["CENTRE_CHIEF"],
+        },
+        {
+          title: "Opérateurs",
+          url: "/operators",
+          icon: Users,
+          roles: ["CENTRE_CHIEF"],
+        }
+      );
+    }
+
+    // Base Chief specific items
+    if (user?.role === "BASE_CHIEF") {
+      roleSpecificItems.push(
+        {
+          title: "Mes Bassins",
+          url: "/basins",
+          icon: Waves,
+          roles: ["BASE_CHIEF"],
+        },
+        {
+          title: "Opérateurs",
+          url: "/operators",
+          icon: Users,
+          roles: ["BASE_CHIEF"],
+        },
+        {
+          title: "Données",
+          url: "/data",
+          icon: Database,
+          roles: ["BASE_CHIEF"],
+        }
+      );
+    }
+
+    // Operator specific items
+    if (user?.role === "OPERATOR") {
+      roleSpecificItems.push(
+        {
+          title: "Mes Bassins",
+          url: "/basins",
+          icon: Waves,
+          roles: ["OPERATOR"],
+        },
+        {
+          title: "Saisie Données",
+          url: "/data-entry",
+          icon: Database,
+          roles: ["OPERATOR"],
+        }
+      );
+    }
+
+    // Sensor Data item for all roles
+    const sensorDataItem = {
+      title: "Données Capteurs",
+      url: "/sensor-data",
+      icon: Activity,
+      roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
+    };
+
+    const settingsItem = {
+      title: "Paramètres",
+      url: "/settings",
+      icon: Settings,
+      roles: ["ADMIN", "CENTRE_CHIEF", "BASE_CHIEF", "OPERATOR"],
+    };
+
+    return [...baseItems, ...roleSpecificItems, sensorDataItem, settingsItem];
+  };
+
+  const items = getNavigationItems();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
@@ -57,14 +205,87 @@ export function MobileHeader() {
           language === "ar" ? "flex-row-reverse" : ""
         }`}
       >
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`h-7 w-7 p-0 ${language === "ar" ? "-mr-1" : "-ml-1"}`}
-        >
-          <Menu className="h-4 w-4" />
-          <span className="sr-only">Toggle Menu</span>
-        </Button>
+        {/* Mobile Menu Sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 w-7 p-0 ${language === "ar" ? "-mr-1" : "-ml-1"}`}
+            >
+              <Menu className="h-4 w-4" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side={language === "ar" ? "right" : "left"}
+            className="w-80 p-0"
+          >
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/logo.svg"
+                    alt="AquaMonitor Logo"
+                    width={120}
+                    height={60}
+                  />
+                </div>
+              </div>
+
+              {/* Navigation Items */}
+              <nav className="flex-1 p-4 space-y-2">
+                {items.map((item) => {
+                  const isActive = pathname === item.url;
+                  return (
+                    <Link
+                      key={item.title}
+                      href={item.url}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-accent hover:text-accent-foreground"
+                      } ${
+                        language === "ar" ? "flex-row-reverse text-right" : ""
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* User info in sheet */}
+              {user && (
+                <div className="p-4 border-t">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/50">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback
+                        className={getRoleColor(user?.role || "")}
+                      >
+                        {getInitials(user.firstName, user.lastName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <Badge
+                        className={`text-xs mt-1 ${getRoleColor(user.role)}`}
+                      >
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Logo */}
         <div
           className={`flex items-center gap-2 ${
             language === "ar" ? "mr-4" : "ml-4"
@@ -174,7 +395,7 @@ export function MobileHeader() {
                       user?.role || ""
                     )} ${language === "ar" ? "self-end" : ""}`}
                   >
-                    {user?.role}
+                    {getRoleLabel(user?.role || "")}
                   </Badge>
                 </div>
               </DropdownMenuLabel>

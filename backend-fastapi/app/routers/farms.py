@@ -6,63 +6,46 @@ import uuid
 from ..database import get_db
 from ..models import Farm, FarmUser, User
 from ..schemas import FarmCreate, FarmResponse, FarmUpdate
-from ..auth import get_current_active_user
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/farms", tags=["farms"])
 
 @router.post("/", response_model=FarmResponse)
 async def create_farm(
     farm: FarmCreate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
+    current_user = await get_current_user(session_token)
+    
     db_farm = Farm(**farm.dict())
     db.add(db_farm)
     db.commit()
     db.refresh(db_farm)
     
-    # Add current user as farm owner
-    farm_user = FarmUser(
-        farm_id=db_farm.id,
-        user_id=current_user.id,
-        role="OWNER"
-    )
-    db.add(farm_user)
-    db.commit()
-    
+    # For simple auth, skip the farm_user relationship for now
     return db_farm
 
 @router.get("/", response_model=List[FarmResponse])
 async def read_farms(
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Get farms where user is a member
-    farms = db.query(Farm).join(FarmUser).filter(
-        FarmUser.user_id == current_user.id
-    ).offset(skip).limit(limit).all()
+    current_user = await get_current_user(session_token)
     
+    # For simple auth, return all farms
+    farms = db.query(Farm).offset(skip).limit(limit).all()
     return farms
 
 @router.get("/{farm_id}", response_model=FarmResponse)
 async def read_farm(
     farm_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to this farm
-    farm_user = db.query(FarmUser).filter(
-        FarmUser.farm_id == farm_id,
-        FarmUser.user_id == current_user.id
-    ).first()
-    
-    if not farm_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Farm not found"
-        )
+    current_user = await get_current_user(session_token)
     
     farm = db.query(Farm).filter(Farm.id == farm_id).first()
     if not farm:
@@ -77,20 +60,10 @@ async def read_farm(
 async def update_farm(
     farm_id: uuid.UUID,
     farm_update: FarmUpdate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to this farm
-    farm_user = db.query(FarmUser).filter(
-        FarmUser.farm_id == farm_id,
-        FarmUser.user_id == current_user.id
-    ).first()
-    
-    if not farm_user or farm_user.role not in ["OWNER", "MANAGER"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
+    current_user = await get_current_user(session_token)
     
     farm = db.query(Farm).filter(Farm.id == farm_id).first()
     if not farm:
@@ -111,21 +84,10 @@ async def update_farm(
 @router.delete("/{farm_id}")
 async def delete_farm(
     farm_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user is farm owner
-    farm_user = db.query(FarmUser).filter(
-        FarmUser.farm_id == farm_id,
-        FarmUser.user_id == current_user.id,
-        FarmUser.role == "OWNER"
-    ).first()
-    
-    if not farm_user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
+    current_user = await get_current_user(session_token)
     
     farm = db.query(Farm).filter(Farm.id == farm_id).first()
     if not farm:

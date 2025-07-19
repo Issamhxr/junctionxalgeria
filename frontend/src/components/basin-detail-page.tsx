@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { apiClient, Basin } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
@@ -18,6 +18,16 @@ import {
   Download,
   RefreshCw,
   Loader2,
+  Play,
+  Pause,
+  Volume2,
+  Maximize,
+  Eye,
+  Fish,
+  Target,
+  BarChart3,
+  Calendar,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,7 +41,43 @@ export function BasinDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Video surveillance state
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoTime, setVideoTime] = useState("00:00");
+  const [currentTimestamp, setCurrentTimestamp] = useState(new Date());
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Mock computer vision data
+  const [cvData, setCvData] = useState({
+    fishDetected: 143,
+    anomaliesDetected: 3,
+    motionIntensity: "High" as "High" | "Medium" | "Low",
+    lastAlert: "Low Activity at 13:45",
+    activityData: [
+      { time: "10:00", activity: 85 },
+      { time: "11:00", activity: 92 },
+      { time: "12:00", activity: 78 },
+      { time: "13:00", activity: 45 },
+      { time: "14:00", activity: 67 },
+      { time: "15:00", activity: 88 },
+    ],
+    anomalyLog: [
+      { time: "13:45", type: "Low Activity", severity: "Warning" },
+      { time: "12:30", type: "Feeding Behavior Change", severity: "Info" },
+      { time: "11:15", type: "Water Surface Disturbance", severity: "Warning" },
+    ],
+  });
+
   const basinId = params.id as string;
+
+  useEffect(() => {
+    // Update timestamp every second
+    const interval = setInterval(() => {
+      setCurrentTimestamp(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchBasin = async () => {
@@ -52,6 +98,68 @@ export function BasinDetailPage() {
       fetchBasin();
     }
   }, [basinId]);
+
+  // Video control handlers
+  const toggleVideoPlayback = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
+
+  const handleVideoTimeUpdate = () => {
+    if (videoRef.current) {
+      const current = videoRef.current.currentTime;
+      const minutes = Math.floor(current / 60);
+      const seconds = Math.floor(current % 60);
+      setVideoTime(
+        `${minutes.toString().padStart(2, "0")}:${seconds
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }
+  };
+
+  const formatTimestamp = (date: Date) => {
+    return date.toLocaleString("fr-FR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const getMotionIntensityColor = (intensity: string) => {
+    switch (intensity) {
+      case "High":
+        return "text-red-600 bg-red-100";
+      case "Medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "Low":
+        return "text-green-600 bg-green-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case "Warning":
+        return "text-yellow-600 bg-yellow-100";
+      case "Info":
+        return "text-blue-600 bg-blue-100";
+      case "Critical":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -381,6 +489,168 @@ export function BasinDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Video Surveillance */}
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-blue-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Surveillance Vidéo
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={toggleVideoPlayback}
+          >
+            {isVideoPlaying ? (
+              <Pause className="h-4 w-4 mr-2" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            {isVideoPlaying ? "Pause" : "Lire"} la Vidéo
+          </Button>
+        </div>
+
+        <div className="relative rounded-2xl overflow-hidden aspect-video mb-4">
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            controls
+            onTimeUpdate={handleVideoTimeUpdate}
+            // src={basin.videoUrl} // Uncomment when video URL is available
+          >
+            <source
+              src="https://www.w3schools.com/html/mov_bbb.mp4"
+              type="video/mp4"
+            />
+            Votre navigateur ne prend pas en charge la lecture de vidéos.
+          </video>
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs rounded-full px-3 py-1">
+            {videoTime}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="rounded-3xl border-green-100 dark:border-green-800 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
+                  Poissons Détectés
+                </CardTitle>
+                <Fish className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-800 dark:text-green-200 mb-1">
+                {cvData.fishDetected}
+              </div>
+              <div className="text-xs text-green-600 dark:text-green-400">
+                Nombre total de poissons détectés par la caméra.
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-red-100 dark:border-red-800 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
+                  Anomalies Détectées
+                </CardTitle>
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-800 dark:text-red-200 mb-1">
+                {cvData.anomaliesDetected}
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400">
+                Nombre total d'anomalies détectées par la caméra.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Motion Intensity and Last Alert */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mt-4 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Intensité du Mouvement
+            </div>
+            <div
+              className={`text-xs rounded-full px-3 py-1 ${getMotionIntensityColor(
+                cvData.motionIntensity
+              )}`}
+            >
+              {cvData.motionIntensity}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Dernière Alerte
+            </div>
+            <div className="text-sm text-gray-800 dark:text-gray-200">
+              {cvData.lastAlert}
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Data Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mt-4 border border-gray-200 dark:border-gray-700">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            Activité des Poissons (Dernières 24h)
+          </div>
+          <div className="grid grid-cols-6 gap-2 text-center">
+            {cvData.activityData.map((data, index) => (
+              <div key={index} className="flex flex-col items-center">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {data.time}
+                </div>
+                <div className="h-20 flex items-end">
+                  <div
+                    className="w-full bg-green-100 rounded-full"
+                    style={{
+                      height: `${data.activity}%`,
+                    }}
+                  >
+                    <div className="text-xs text-center text-green-800 dark:text-green-200">
+                      {data.activity}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Anomaly Log */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mt-4 border border-gray-200 dark:border-gray-700">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            Journal des Anomalies
+          </div>
+          <div className="space-y-2">
+            {cvData.anomalyLog.map((anomaly, index) => (
+              <div
+                key={index}
+                className={`p-3 rounded-lg border ${getSeverityColor(
+                  anomaly.severity
+                )}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {anomaly.type}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {anomaly.time}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Sévérité: {anomaly.severity}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Actions */}
       <div className="flex gap-4">

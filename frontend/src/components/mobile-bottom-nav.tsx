@@ -10,6 +10,7 @@ import {
   MapPin,
   Database,
   BarChart3,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,108 +24,153 @@ export function MobileBottomNav() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
 
-  // Get navigation items based on user role
-  const getNavigationItems = () => {
-    const baseItems = [
-      {
-        title: t("nav.dashboard"),
-        url: "/",
-        icon: LayoutDashboard,
-        roles: ["ADMIN", "FARMER", "TECHNICIAN", "VIEWER"],
-      },
-      {
-        title: t("nav.alerts"),
-        url: "/alerts",
-        icon: AlertTriangle,
-        roles: ["ADMIN", "FARMER", "TECHNICIAN", "VIEWER"],
-      },
-    ];
+  // Standardized navigation items by role - Fixed items that don't change
+  const getStandardNavigationByRole = () => {
+    switch (user?.role) {
+      case "ADMIN":
+        return [
+          {
+            title: "Accueil",
+            url: "/",
+            icon: LayoutDashboard,
+          },
+          {
+            title: "Centres",
+            url: "/centres",
+            icon: Building,
+          },
+          {
+            title: "Capteurs",
+            url: "/sensor-data",
+            icon: Activity,
+          },
+          {
+            title: "Alertes",
+            url: "/alerts",
+            icon: AlertTriangle,
+          },
+          {
+            title: "Paramètres",
+            url: "/settings",
+            icon: Settings,
+          },
+        ];
 
-    const roleSpecificItems = [];
+      case "CENTRE_CHIEF":
+        return [
+          {
+            title: "Accueil",
+            url: "/",
+            icon: LayoutDashboard,
+          },
+          {
+            title: "Mes Bases",
+            url: "/bases",
+            icon: MapPin,
+          },
+          {
+            title: "Capteurs",
+            url: "/sensor-data",
+            icon: Activity,
+          },
+          {
+            title: "Alertes",
+            url: "/alerts",
+            icon: AlertTriangle,
+          },
+          {
+            title: "Paramètres",
+            url: "/settings",
+            icon: Settings,
+          },
+        ];
 
-    // Admin specific items
-    if (user?.role === "ADMIN") {
-      roleSpecificItems.push(
-        {
-          title: language === "ar" ? "المراكز" : "Centres",
-          url: "/centres",
-          icon: Building,
-          roles: ["ADMIN"],
-        },
-        {
-          title: language === "ar" ? "التقارير" : "Reports",
-          url: "/reports",
-          icon: BarChart3,
-          roles: ["ADMIN"],
-        }
-      );
+      case "BASE_CHIEF":
+        return [
+          {
+            title: "Accueil",
+            url: "/",
+            icon: LayoutDashboard,
+          },
+          {
+            title: "Bassins",
+            url: "/basins",
+            icon: Waves,
+          },
+          {
+            title: "Capteurs",
+            url: "/sensor-data",
+            icon: Activity,
+          },
+          {
+            title: "Alertes",
+            url: "/alerts",
+            icon: AlertTriangle,
+          },
+          {
+            title: "Paramètres",
+            url: "/settings",
+            icon: Settings,
+          },
+        ];
+
+      case "OPERATOR":
+        return [
+          {
+            title: "Accueil",
+            url: "/",
+            icon: LayoutDashboard,
+          },
+          {
+            title: "Bassins",
+            url: "/basins",
+            icon: Waves,
+          },
+          {
+            title: "Capteurs",
+            url: "/sensor-data",
+            icon: Activity,
+          },
+          {
+            title: "Saisie",
+            url: "/data-entry",
+            icon: Database,
+          },
+          {
+            title: "Paramètres",
+            url: "/settings",
+            icon: Settings,
+          },
+        ];
+
+      default:
+        // Fallback navigation for any undefined roles
+        return [
+          {
+            title: "Accueil",
+            url: "/",
+            icon: LayoutDashboard,
+          },
+          {
+            title: "Capteurs",
+            url: "/sensor-data",
+            icon: Activity,
+          },
+          {
+            title: "Alertes",
+            url: "/alerts",
+            icon: AlertTriangle,
+          },
+          {
+            title: "Paramètres",
+            url: "/settings",
+            icon: Settings,
+          },
+        ];
     }
-
-    // Farmer specific items
-    if (user?.role === "FARMER") {
-      roleSpecificItems.push(
-        {
-          title: t("nav.basins"),
-          url: "/basins",
-          icon: Waves,
-          roles: ["FARMER"],
-        },
-        {
-          title: language === "ar" ? "إدخال البيانات" : "Data Entry",
-          url: "/data-entry",
-          icon: Database,
-          roles: ["FARMER"],
-        }
-      );
-    }
-
-    // Technician specific items
-    if (user?.role === "TECHNICIAN") {
-      roleSpecificItems.push(
-        {
-          title: t("nav.basins"),
-          url: "/basins",
-          icon: Waves,
-          roles: ["TECHNICIAN"],
-        },
-        {
-          title: language === "ar" ? "الصيانة" : "Maintenance",
-          url: "/maintenance",
-          icon: Settings,
-          roles: ["TECHNICIAN"],
-        }
-      );
-    }
-
-    // Viewer specific items
-    if (user?.role === "VIEWER") {
-      roleSpecificItems.push({
-        title: t("nav.basins"),
-        url: "/basins",
-        icon: Waves,
-        roles: ["VIEWER"],
-      });
-    }
-
-    // Always include settings as the last item
-    const settingsItem = {
-      title: t("nav.settings"),
-      url: "/settings",
-      icon: Settings,
-      roles: ["ADMIN", "FARMER", "TECHNICIAN", "VIEWER"],
-    };
-
-    // Combine all items and limit to 5 for mobile
-    const allItems = [...baseItems, ...roleSpecificItems];
-
-    // Take first 4 items + settings
-    const mobileItems = allItems.slice(0, 4);
-    mobileItems.push(settingsItem);
-
-    return mobileItems.slice(0, 5); // Ensure max 5 items
   };
 
-  const items = getNavigationItems();
+  const items = getStandardNavigationByRole();
 
   return (
     <div
@@ -139,6 +185,8 @@ export function MobileBottomNav() {
       >
         {items.map((item) => {
           const isActive = pathname === item.url;
+          const hasAlertBadge = item.title === "Alertes";
+
           return (
             <Link
               key={item.title}
@@ -152,7 +200,7 @@ export function MobileBottomNav() {
             >
               <div className="relative">
                 <item.icon className="h-6 w-6 mb-1" />
-                {item.title === t("nav.alerts") && (
+                {hasAlertBadge && (
                   <Badge
                     className={`absolute h-4 w-4 p-0 flex items-center justify-center text-xs bg-red-500 dark:bg-red-600 border-0 ${
                       language === "ar" ? "-top-2 -left-2" : "-top-2 -right-2"

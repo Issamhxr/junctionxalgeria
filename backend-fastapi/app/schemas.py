@@ -57,8 +57,10 @@ class SensorType(str, Enum):
     CONDUCTIVITY = "CONDUCTIVITY"
     SALINITY = "SALINITY"
     NITRATE = "NITRATE"
+    NITRITE = "NITRITE"
     PHOSPHATE = "PHOSPHATE"
     AMMONIA = "AMMONIA"
+    WATER_LEVEL = "WATER_LEVEL"
 
 # Base schemas
 class UserBase(BaseModel):

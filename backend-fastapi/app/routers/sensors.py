@@ -6,30 +6,21 @@ import uuid
 from ..database import get_db
 from ..models import SensorData, Pond, FarmUser, User
 from ..schemas import SensorDataCreate, SensorDataResponse
-from ..auth import get_current_active_user
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/sensor-data", tags=["sensor-data"])
 
 @router.post("/", response_model=SensorDataResponse)
 async def create_sensor_data(
     sensor_data: SensorDataCreate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to the pond
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == sensor_data.pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
     
-    if not pond:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
-    
+    # For simple auth, allow all users to create sensor data
     sensor_data_dict = sensor_data.dict()
-    sensor_data_dict["user_id"] = current_user.id
+    sensor_data_dict["user_id"] = current_user.get("id", "unknown")
     db_sensor_data = SensorData(**sensor_data_dict)
     db.add(db_sensor_data)
     db.commit()
@@ -42,12 +33,13 @@ async def read_sensor_data(
     skip: int = 0,
     limit: int = 100,
     pond_id: uuid.UUID = None,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(SensorData).join(Pond).join(FarmUser).filter(
-        FarmUser.user_id == current_user.id
-    )
+    current_user = await get_current_user(session_token)
+    
+    # For simple auth, return all sensor data
+    query = db.query(SensorData)
     
     if pond_id:
         query = query.filter(SensorData.pond_id == pond_id)
@@ -58,13 +50,12 @@ async def read_sensor_data(
 @router.get("/{sensor_data_id}", response_model=SensorDataResponse)
 async def read_sensor_data_by_id(
     sensor_data_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    sensor_data = db.query(SensorData).join(Pond).join(FarmUser).filter(
-        SensorData.id == sensor_data_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    sensor_data = db.query(SensorData).filter(SensorData.id == sensor_data_id).first()
     
     if not sensor_data:
         raise HTTPException(
@@ -77,21 +68,12 @@ async def read_sensor_data_by_id(
 @router.get("/pond/{pond_id}/latest", response_model=SensorDataResponse)
 async def get_latest_sensor_data(
     pond_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to the pond
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
     
-    if not pond:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
-    
+    # For simple auth, allow access to all ponds
     latest_data = db.query(SensorData).filter(
         SensorData.pond_id == pond_id
     ).order_by(SensorData.timestamp.desc()).first()

@@ -59,8 +59,10 @@ class SensorType(enum.Enum):
     CONDUCTIVITY = "CONDUCTIVITY"
     SALINITY = "SALINITY"
     NITRATE = "NITRATE"
+    NITRITE = "NITRITE"
     PHOSPHATE = "PHOSPHATE"
     AMMONIA = "AMMONIA"
+    WATER_LEVEL = "WATER_LEVEL"
 
 class PondStatus(enum.Enum):
     ACTIVE = "ACTIVE"

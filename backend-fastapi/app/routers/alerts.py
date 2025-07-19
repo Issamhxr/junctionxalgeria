@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
@@ -6,34 +6,46 @@ import uuid
 from ..database import get_db
 from ..models import Alert, Pond, FarmUser, User
 from ..schemas import AlertCreate, AlertResponse, AlertUpdate
-from ..auth import get_current_active_user
+from ..auth import get_current_user
+from ..services.notifications import notification_service
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 @router.post("/", response_model=AlertResponse)
 async def create_alert(
     alert: AlertCreate,
-    current_user: User = Depends(get_current_active_user),
+    background_tasks: BackgroundTasks,
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to the pond
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == alert.pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
     
-    if not pond:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
-    
+    # For simple auth, allow all users to create alerts
     alert_data = alert.dict()
-    alert_data["user_id"] = current_user.id
+    alert_data["user_id"] = current_user.get("id", "unknown")
     db_alert = Alert(**alert_data)
     db.add(db_alert)
     db.commit()
     db.refresh(db_alert)
+    
+    # Get users who should receive notifications for this alert
+    # This would typically be based on farm membership, roles, etc.
+    users_to_notify = db.query(User).filter(
+        User.id.in_(
+            db.query(FarmUser.user_id).filter(
+                FarmUser.farm_id == alert.farm_id
+            )
+        )
+    ).all()
+    
+    # Send notifications in the background
+    if users_to_notify:
+        background_tasks.add_task(
+            notification_service.send_alert_notification,
+            db_alert,
+            users_to_notify,
+            db
+        )
     
     return db_alert
 
@@ -44,12 +56,13 @@ async def read_alerts(
     pond_id: uuid.UUID = None,
     severity: str = None,
     is_resolved: bool = None,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Alert).join(Pond).join(FarmUser).filter(
-        FarmUser.user_id == current_user.id
-    )
+    current_user = await get_current_user(session_token)
+    
+    # For simple auth, return all alerts
+    query = db.query(Alert)
     
     if pond_id:
         query = query.filter(Alert.pond_id == pond_id)
@@ -66,13 +79,12 @@ async def read_alerts(
 @router.get("/{alert_id}", response_model=AlertResponse)
 async def read_alert(
     alert_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    alert = db.query(Alert).join(Pond).join(FarmUser).filter(
-        Alert.id == alert_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
     
     if not alert:
         raise HTTPException(
@@ -86,13 +98,12 @@ async def read_alert(
 async def update_alert(
     alert_id: uuid.UUID,
     alert_update: AlertUpdate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    alert = db.query(Alert).join(Pond).join(FarmUser).filter(
-        Alert.id == alert_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
     
     if not alert:
         raise HTTPException(
@@ -105,7 +116,7 @@ async def update_alert(
         setattr(alert, field, value)
     
     if update_data.get("is_resolved"):
-        alert.resolved_by = current_user.id
+        alert.resolved_by = current_user.get("id", "unknown")
     
     db.commit()
     db.refresh(alert)
@@ -115,13 +126,12 @@ async def update_alert(
 @router.delete("/{alert_id}")
 async def delete_alert(
     alert_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    alert = db.query(Alert).join(Pond).join(FarmUser).filter(
-        Alert.id == alert_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
     
     if not alert:
         raise HTTPException(

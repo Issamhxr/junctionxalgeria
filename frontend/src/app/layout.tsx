@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description:
     "Système intelligent de surveillance et gestion des fermes aquacoles en Algérie",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -20,6 +25,14 @@ export const metadata: Metadata = {
     title: "AquaCulture Algeria",
     description: "Système intelligent de surveillance aquacole",
     type: "website",
+    images: [
+      {
+        url: "/icon.svg",
+        width: 512,
+        height: 512,
+        alt: "AquaCulture Algeria Logo",
+      },
+    ],
   },
 };
 
@@ -44,12 +57,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="AquaCulture DZ" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="msapplication-TileColor" content="#3b82f6" />
-        <meta
-          name="msapplication-TileImage"
-          content="/icons/icon-192x192.png"
-        />
+        <meta name="msapplication-TileImage" content="/icon.svg" />
       </head>
       <body className={outfit.className} suppressHydrationWarning>
         <ClientLayoutWrapper>{children}</ClientLayoutWrapper>

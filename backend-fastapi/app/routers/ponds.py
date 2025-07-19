@@ -6,30 +6,21 @@ import uuid
 from ..database import get_db
 from ..models import Pond, Farm, FarmUser, User
 from ..schemas import PondCreate, PondResponse, PondUpdate
-from ..auth import get_current_active_user
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/ponds", tags=["ponds"])
 
 @router.post("/", response_model=PondResponse)
 async def create_pond(
     pond: PondCreate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    # Check if user has access to the farm
-    farm_user = db.query(FarmUser).filter(
-        FarmUser.farm_id == pond.farm_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
     
-    if not farm_user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
-    
+    # For simple auth, allow all users to create ponds
     pond_data = pond.dict()
-    pond_data["user_id"] = current_user.id
+    pond_data["user_id"] = current_user.get("id", "unknown")
     db_pond = Pond(**pond_data)
     db.add(db_pond)
     db.commit()
@@ -42,12 +33,13 @@ async def read_ponds(
     skip: int = 0,
     limit: int = 100,
     farm_id: uuid.UUID = None,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Pond).join(FarmUser).filter(
-        FarmUser.user_id == current_user.id
-    )
+    current_user = await get_current_user(session_token)
+    
+    # For simple auth, return all ponds
+    query = db.query(Pond)
     
     if farm_id:
         query = query.filter(Pond.farm_id == farm_id)
@@ -58,13 +50,12 @@ async def read_ponds(
 @router.get("/{pond_id}", response_model=PondResponse)
 async def read_pond(
     pond_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    pond = db.query(Pond).filter(Pond.id == pond_id).first()
     
     if not pond:
         raise HTTPException(
@@ -78,13 +69,12 @@ async def read_pond(
 async def update_pond(
     pond_id: uuid.UUID,
     pond_update: PondUpdate,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    pond = db.query(Pond).filter(Pond.id == pond_id).first()
     
     if not pond:
         raise HTTPException(
@@ -104,13 +94,12 @@ async def update_pond(
 @router.delete("/{pond_id}")
 async def delete_pond(
     pond_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
+    session_token: str = None,
     db: Session = Depends(get_db)
 ):
-    pond = db.query(Pond).join(FarmUser).filter(
-        Pond.id == pond_id,
-        FarmUser.user_id == current_user.id
-    ).first()
+    current_user = await get_current_user(session_token)
+    
+    pond = db.query(Pond).filter(Pond.id == pond_id).first()
     
     if not pond:
         raise HTTPException(

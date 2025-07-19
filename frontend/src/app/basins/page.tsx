@@ -67,6 +67,11 @@ export default function BasinsPage() {
                 ph: 7.8,
                 oxygen: 6.8,
                 salinity: 34.5,
+                turbidity: 2.3, // MES in NTU
+                ammonia: 0.15,
+                nitrite: 0.08,
+                nitrate: 12.5,
+                waterLevel: 2.1,
                 timestamp: new Date().toISOString(),
               },
             ],
@@ -89,6 +94,11 @@ export default function BasinsPage() {
                 ph: 7.2,
                 oxygen: 8.1,
                 salinity: 0.5,
+                turbidity: 1.8, // MES in NTU
+                ammonia: 0.22,
+                nitrite: 0.12,
+                nitrate: 8.3,
+                waterLevel: 1.8,
                 timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
               },
             ],
@@ -111,6 +121,11 @@ export default function BasinsPage() {
                 ph: 8.1,
                 oxygen: 5.9,
                 salinity: 15.0,
+                turbidity: 4.2, // MES in NTU - higher value for demonstration
+                ammonia: 0.28,
+                nitrite: 0.35,
+                nitrate: 35.2,
+                waterLevel: 3.2,
                 timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
               },
             ],
@@ -134,7 +149,7 @@ export default function BasinsPage() {
     fetchBasins();
 
     // Set up auto-refresh every 5 seconds instead of 1 second
-    const interval = setInterval(fetchBasins, 5000);
+    const interval = setInterval(fetchBasins, 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -189,7 +204,8 @@ export default function BasinsPage() {
       latestReading.temperature < 18 ||
       latestReading.temperature > 30 ||
       latestReading.oxygen < 4.0 ||
-      latestReading.salinity > 35
+      latestReading.salinity > 35 ||
+      (latestReading.turbidity && latestReading.turbidity > 10) // Critical MES level
     ) {
       return "critical";
     }
@@ -201,7 +217,8 @@ export default function BasinsPage() {
       latestReading.temperature < 20 ||
       latestReading.temperature > 28 ||
       latestReading.oxygen < 5.0 ||
-      latestReading.salinity > 30
+      latestReading.salinity > 30 ||
+      (latestReading.turbidity && latestReading.turbidity > 5) // Warning MES level
     ) {
       return "warning";
     }
@@ -210,17 +227,15 @@ export default function BasinsPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    switch (status.toLowerCase()) {
+      case "optimal":
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700";
       case "warning":
-        return "bg-amber-100 text-amber-700 border-amber-200";
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700";
       case "critical":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "offline":
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600";
     }
   };
 
@@ -406,121 +421,67 @@ export default function BasinsPage() {
           return (
             <Card
               key={basin.id}
-              className="rounded-3xl border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className="p-6 hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700"
             >
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-gray-800">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                     {basin.name}
-                  </CardTitle>
-                  <Badge
-                    className={`${getStatusColor(
-                      status
-                    )} rounded-full px-3 py-1 text-xs font-medium border`}
-                  >
-                    {getStatusIcon(status)}
-                    <span className="ml-2">{status}</span>
-                  </Badge>
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {basin.location}
+                  </p>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {basin.farm.name} - {basin.farm.location}
-                </div>
-              </CardHeader>
+                <Badge
+                  className={`${getStatusColor(
+                    basin.status
+                  )} text-xs px-3 py-1 rounded-full font-medium border`}
+                >
+                  {basin.status.charAt(0).toUpperCase() + basin.status.slice(1)}
+                </Badge>
+              </div>
 
-              <CardContent className="space-y-4">
-                {status !== "offline" && latestReading ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-orange-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Thermometer className="h-4 w-4 text-orange-500" />
-                        <span className="text-xs font-medium text-gray-600">
-                          Temp
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {latestReading.temperature.toFixed(1)}°C
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Droplets className="h-4 w-4 text-blue-500" />
-                        <span className="text-xs font-medium text-gray-600">
-                          pH
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {latestReading.ph.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="bg-green-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Activity className="h-4 w-4 text-green-500" />
-                        <span className="text-xs font-medium text-gray-600">
-                          O₂
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {latestReading.oxygen.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="bg-teal-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Waves className="h-4 w-4 text-teal-500" />
-                        <span className="text-xs font-medium text-gray-600">
-                          Sal
-                        </span>
-                      </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {latestReading.salinity.toFixed(1)}
-                      </div>
-                    </div>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border dark:border-blue-800/30">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {basin.waterLevel}%
                   </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-2xl p-6 text-center">
-                    <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Bassin hors ligne</p>
-                  </div>
-                )}
-
-                {basin.alerts && basin.alerts.length > 0 && (
-                  <div className="bg-red-50 rounded-2xl p-3 border border-red-100">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm font-medium text-red-700">
-                        {basin.alerts.length} alerte
-                        {basin.alerts.length > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500">
-                    {latestReading
-                      ? new Date(latestReading.timestamp).toLocaleTimeString()
-                      : "Aucune donnée"}
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/basin/${basin.id}`}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-xl"
-                      >
-                        Voir
-                      </Button>
-                    </Link>
-                    {user?.role === "TECHNICIAN" && (
-                      <Button
-                        size="sm"
-                        className="rounded-xl bg-blue-600 hover:bg-blue-700"
-                      >
-                        Mesurer
-                      </Button>
-                    )}
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {t("waterLevel")}
                   </div>
                 </div>
-              </CardContent>
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border dark:border-green-800/30">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {basin.temperature}°C
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {t("temperature")}
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border dark:border-purple-800/30">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {basin.ph}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    pH {t("level")}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                  <Clock className="h-4 w-4 mr-1" />
+                  {basin.lastUpdate}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBasinClick(basin.id)}
+                  className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  {t("viewDetails")}
+                </Button>
+              </div>
             </Card>
           );
         })}

@@ -188,15 +188,15 @@ export function AlertsPage() {
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case "critical":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800";
       case "high":
-        return "bg-orange-100 text-orange-700 border-orange-200";
+        return "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800";
       case "medium":
-        return "bg-amber-100 text-amber-700 border-amber-200";
+        return "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
       case "low":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800";
     }
   };
 
@@ -225,6 +225,14 @@ export function AlertsPage() {
         return <Activity className="h-4 w-4 text-green-500" />;
       case "salinity":
         return <Waves className="h-4 w-4 text-teal-500" />;
+      case "ammonia":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case "nitrite":
+        return <Droplets className="h-4 w-4 text-yellow-500" />;
+      case "nitrate":
+        return <Droplets className="h-4 w-4 text-orange-400" />;
+      case "waterLevel":
+        return <Waves className="h-4 w-4 text-cyan-500" />;
       default:
         return null;
     }
@@ -298,11 +306,11 @@ export function AlertsPage() {
   return (
     <div className="p-6 space-y-6 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-100">
+      <div className="bg-card rounded-3xl p-8 shadow-sm border">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">Alertes</h1>
-            <p className="text-gray-600 text-lg">
+            <h1 className="text-4xl font-bold text-foreground">Alertes</h1>
+            <p className="text-muted-foreground text-lg">
               Surveillance des événements et anomalies
             </p>
           </div>
@@ -311,7 +319,7 @@ export function AlertsPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualiser
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+            <Button className="bg-primary hover:bg-primary/90 rounded-xl">
               <Bell className="h-4 w-4 mr-2" />
               Configurer
             </Button>
@@ -319,84 +327,18 @@ export function AlertsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-blue-700">
-                Total Alertes
-              </CardTitle>
-              <Bell className="h-6 w-6 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-800">
-              {stats.total}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-orange-100 bg-gradient-to-br from-orange-50 to-orange-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-orange-700">
-                Non lues
-              </CardTitle>
-              <BellOff className="h-6 w-6 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-800">
-              {stats.unread}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-red-100 bg-gradient-to-br from-red-50 to-red-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-red-700">
-                Critiques
-              </CardTitle>
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-800">
-              {stats.critical}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-green-100 bg-gradient-to-br from-green-50 to-green-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-green-700">
-                Résolues
-              </CardTitle>
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-800">
-              {stats.resolved}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
+      <Card className="rounded-3xl shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-800">
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Filter className="h-5 w-5" />
             Filtres
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher..."
                 value={searchTerm}
@@ -404,11 +346,7 @@ export function AlertsPage() {
                 className="pl-10 rounded-xl"
               />
             </div>
-            <Select
-              value={severityFilter}
-              onValueChange={setSeverityFilter}
-              className="rounded-xl"
-            >
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Sévérité" />
               </SelectTrigger>
@@ -420,11 +358,7 @@ export function AlertsPage() {
                 <SelectItem value="low">Basse</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={typeFilter}
-              onValueChange={setTypeFilter}
-              className="rounded-xl"
-            >
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -440,11 +374,7 @@ export function AlertsPage() {
                 <SelectItem value="MAINTENANCE_DUE">Maintenance</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-              className="rounded-xl"
-            >
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -462,18 +392,20 @@ export function AlertsPage() {
       {/* Alerts List */}
       <div className="space-y-4">
         {filteredAlerts.length === 0 ? (
-          <Card className="rounded-3xl border-gray-100 shadow-sm">
+          <Card className="rounded-3xl shadow-sm">
             <CardContent className="p-12 text-center">
-              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Aucune alerte trouvée</p>
+              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Aucune alerte trouvée</p>
             </CardContent>
           </Card>
         ) : (
           filteredAlerts.map((alert) => (
             <Card
               key={alert.id}
-              className={`rounded-3xl border-gray-100 shadow-sm hover:shadow-md transition-shadow ${
-                !alert.isRead ? "bg-blue-50 border-blue-200" : ""
+              className={`rounded-3xl shadow-sm hover:shadow-md transition-shadow ${
+                !alert.isRead
+                  ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+                  : ""
               }`}
             >
               <CardContent className="p-6">
@@ -485,16 +417,16 @@ export function AlertsPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-800">
+                        <h3 className="font-semibold text-foreground">
                           {alert.message}
                         </h3>
                         {!alert.isRead && (
-                          <Badge className="bg-blue-100 text-blue-700 text-xs">
+                          <Badge className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs">
                             Nouveau
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                         <span>Type: {alert.type.replace("_", " ")}</span>
                         {alert.parameter && (
                           <span>Paramètre: {alert.parameter}</span>
@@ -505,7 +437,7 @@ export function AlertsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         <span>Il y a {getTimeAgo(alert.createdAt)}</span>
                       </div>
@@ -520,7 +452,7 @@ export function AlertsPage() {
                       {alert.severity}
                     </Badge>
                     {alert.isResolved && (
-                      <Badge className="bg-green-100 text-green-700 rounded-full px-3 py-1 text-xs font-medium border border-green-200">
+                      <Badge className="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded-full px-3 py-1 text-xs font-medium border border-green-200 dark:border-green-800">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Résolu
                       </Badge>
@@ -540,7 +472,7 @@ export function AlertsPage() {
                       <Link href={`/basin/${alert.pondId}`}>
                         <Button
                           size="sm"
-                          className="rounded-xl bg-blue-600 hover:bg-blue-700"
+                          className="rounded-xl bg-primary hover:bg-primary/90"
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Voir bassin
@@ -553,6 +485,64 @@ export function AlertsPage() {
             </Card>
           ))
         )}
+      </div>
+
+      {/* Fixed Stats Panel - Bottom Left */}
+      <div className="fixed bottom-6 left-6 z-40 hidden lg:block">
+        <Card className="rounded-2xl shadow-xl bg-card/95 backdrop-blur-sm border">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Stats Alertes
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-xs text-muted-foreground">Total</span>
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {stats.total}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-xs text-muted-foreground">
+                      Non lues
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {stats.unread}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-xs text-muted-foreground">
+                      Critiques
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {stats.critical}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-muted-foreground">
+                      Résolues
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
+                    {stats.resolved}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

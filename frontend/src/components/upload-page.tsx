@@ -126,13 +126,16 @@ export function UploadPage() {
 
   const getStatusBadge = (status: UploadedFile["status"]) => {
     const colors = {
-      uploading: "bg-blue-100 text-blue-700",
-      success: "bg-green-100 text-green-700",
-      error: "bg-red-100 text-red-700",
+      uploading:
+        "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700",
+      success:
+        "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700",
+      error:
+        "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700",
     };
 
     return (
-      <Badge className={`${colors[status]} rounded-full px-3 py-1`}>
+      <Badge className={`${colors[status]} rounded-full px-3 py-1 border`}>
         {getStatusIcon(status)}
         <span className="ml-2 capitalize">{status}</span>
       </Badge>
@@ -140,37 +143,41 @@ export function UploadPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
           {t("upload.title")}
         </h1>
-        <p className="text-gray-600">{t("upload.formats")}</p>
+        <p className="text-gray-600 dark:text-gray-300">
+          {t("upload.formats")}
+        </p>
       </div>
 
       {/* Upload Area */}
-      <Card className="rounded-2xl border-gray-100 shadow-sm">
+      <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
         <CardContent className="p-8">
           <div
             className={`border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
               dragActive
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <p className="text-xl font-medium text-gray-700 mb-2">
+            <Upload className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-xl font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t("upload.drag")}
             </p>
-            <p className="text-gray-500 mb-6">{t("upload.formats")}</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {t("upload.formats")}
+            </p>
             <Button
               size="lg"
-              className="rounded-xl px-8 py-3 bg-blue-600 hover:bg-blue-700"
+              className="rounded-xl px-8 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
               onClick={() => document.getElementById("file-input")?.click()}
             >
               <Upload className="mr-2 h-5 w-5" />
@@ -192,46 +199,53 @@ export function UploadPage() {
 
       {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
-        <Card className="rounded-2xl border-gray-100 shadow-sm">
+        <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800">
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               Fichiers téléchargés ({uploadedFiles.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {uploadedFiles.map((file) => (
-              <div key={file.id} className="bg-gray-50 rounded-xl p-4">
+              <div
+                key={file.id}
+                className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Upload className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{file.name}</p>
-                      <p className="text-sm text-gray-500">{file.size}</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-100">
+                        {file.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {file.size}
+                      </p>
                     </div>
                   </div>
                   {getStatusBadge(file.status)}
                 </div>
 
                 {file.status === "success" && (
-                  <div className="border-t border-gray-200 pt-4">
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                       <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           {t("upload.donor.select")}
                         </label>
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                           <Input
                             placeholder={t("upload.donor.search")}
                             value={donorSearch}
                             onChange={(e) => setDonorSearch(e.target.value)}
-                            className="pl-10 rounded-xl border-gray-200"
+                            className="pl-10 rounded-xl border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           />
                         </div>
                         {donorSearch && (
-                          <div className="mt-2 max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+                          <div className="mt-2 max-h-40 overflow-y-auto bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl shadow-sm">
                             {filteredDonors.map((donor) => (
                               <button
                                 key={donor.id}
@@ -239,15 +253,15 @@ export function UploadPage() {
                                   assignDonor(file.id, donor);
                                   setDonorSearch("");
                                 }}
-                                className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-b-0"
                               >
                                 <div className="flex items-center gap-3">
-                                  <User className="h-4 w-4 text-gray-400" />
+                                  <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                                   <div>
-                                    <p className="font-medium text-gray-800">
+                                    <p className="font-medium text-gray-800 dark:text-gray-100">
                                       {donor.name}
                                     </p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
                                       {donor.id} • {donor.email}
                                     </p>
                                   </div>
@@ -259,16 +273,16 @@ export function UploadPage() {
                       </div>
 
                       {file.assignedDonor && (
-                        <div className="bg-white rounded-xl p-4 border border-green-200">
+                        <div className="bg-white dark:bg-gray-600 rounded-xl p-4 border border-green-200 dark:border-green-700">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                              <User className="h-4 w-4 text-green-600" />
+                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                              <User className="h-4 w-4 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-800">
+                              <p className="font-medium text-gray-800 dark:text-gray-100">
                                 {file.assignedDonor.name}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {file.assignedDonor.id}
                               </p>
                             </div>
@@ -278,7 +292,7 @@ export function UploadPage() {
 
                       <Button
                         disabled={!file.assignedDonor}
-                        className="rounded-xl px-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                        className="rounded-xl px-6 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600"
                       >
                         {t("upload.assign")}
                       </Button>

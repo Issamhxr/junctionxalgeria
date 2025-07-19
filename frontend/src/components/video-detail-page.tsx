@@ -68,10 +68,11 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
   const getStatusBadge = (status: string) => {
     const colors = {
-      pending: "bg-gray-100 text-gray-700",
-      sent: "bg-blue-100 text-blue-700",
-      confirmed: "bg-green-100 text-green-700",
-      error: "bg-red-100 text-red-700",
+      pending: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+      sent: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      confirmed:
+        "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      error: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
     };
 
     return (
@@ -86,9 +87,9 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-4">
           <Link href="/">
             <Button
@@ -101,14 +102,16 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
               {t("video.title")} - {video.id}
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-gray-600">Statut:</span>
+              <span className="text-gray-600 dark:text-gray-400">Statut:</span>
               {getStatusBadge(video.status)}
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-600">{video.date}</span>
+              <span className="text-gray-500 dark:text-gray-400">•</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                {video.date}
+              </span>
             </div>
           </div>
         </div>
@@ -116,14 +119,14 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Video Preview */}
-        <Card className="rounded-2xl border-gray-100 shadow-sm">
+        <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800">
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               Aperçu de la vidéo
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative bg-gray-900 rounded-xl overflow-hidden">
+            <div className="relative bg-gray-900 dark:bg-gray-950 rounded-xl overflow-hidden">
               <img
                 src={video.videoUrl || "/placeholder.svg"}
                 alt="Video thumbnail"
@@ -142,88 +145,133 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
         </Card>
 
         {/* Donor Information */}
-        <Card className="rounded-2xl border-gray-100 shadow-sm">
+        <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800">
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               {t("video.donor.info")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-semibold text-gray-800">
+                <p className="font-semibold text-gray-800 dark:text-gray-100">
                   {video.donor.name}
                 </p>
-                <p className="text-sm text-gray-500">ID: {video.donor.id}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  ID: {video.donor.id}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <Mail className="h-5 w-5 text-gray-500" />
-                <span className="text-gray-700">{video.donor.email}</span>
+            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
+              <div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">
+                  {video.donor.email}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Email
+                </p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <Phone className="h-5 w-5 text-gray-500" />
-                <span className="text-gray-700">{video.donor.phone}</span>
+            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                <Phone className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
+              <div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">
+                  {video.donor.phone}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Téléphone
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Link href={`/donors/${video.donor.id}`}>
+                <Button variant="outline" className="w-full rounded-xl">
+                  Voir le profil complet
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Message Preview */}
-      <Card className="rounded-2xl border-gray-100 shadow-sm">
+      {/* Message Section */}
+      <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">
-            {t("video.message.preview")}
+          <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Message personnalisé
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="min-h-32 rounded-xl border-gray-200 resize-none"
-            placeholder="Message personnalisé..."
-          />
+          <div className="space-y-4">
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Rédigez votre message personnalisé pour accompagner la vidéo..."
+              className="min-h-[120px] rounded-xl resize-none dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+            />
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => setMessage(video.message)}
+              >
+                Réinitialiser
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Sauvegarder
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4 justify-center">
-        {video.status !== "confirmed" && (
-          <>
-            <Button
-              size="lg"
-              className="rounded-2xl px-8 py-4 bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="mr-3 h-5 w-5" />
-              {t("action.resend")}
+      {/* Actions */}
+      <Card className="rounded-2xl border-gray-100 dark:border-gray-700 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {video.status === "pending" && (
+              <Button className="rounded-xl bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Envoyer la vidéo
+              </Button>
+            )}
+            {video.status === "sent" && (
+              <Button variant="outline" className="rounded-xl">
+                <Send className="h-4 w-4 mr-2" />
+                Renvoyer
+              </Button>
+            )}
+            <Button variant="outline" className="rounded-xl">
+              Télécharger
             </Button>
-
-            <Button
-              size="lg"
-              className="rounded-2xl px-8 py-4 bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle className="mr-3 h-5 w-5" />
-              {t("video.confirm")}
+            <Button variant="destructive" className="rounded-xl">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer
             </Button>
-          </>
-        )}
-
-        <Button
-          size="lg"
-          variant="outline"
-          className="rounded-2xl px-8 py-4 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 bg-transparent"
-        >
-          <Trash2 className="mr-3 h-5 w-5" />
-          {t("action.delete")}
-        </Button>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

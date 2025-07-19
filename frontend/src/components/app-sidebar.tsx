@@ -2,7 +2,6 @@
 
 import {
   LayoutDashboard,
-  Waves,
   AlertTriangle,
   Settings,
   Globe,
@@ -16,15 +15,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -205,16 +208,24 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-blue-100 bg-white">
-      <SidebarHeader className="p-6 bg-gradient-to-r from-blue-50 to-teal-50">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-            <Waves className="h-7 w-7 text-white" />
-          </div>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="font-bold text-gray-800 text-lg">AquaMonitor</h2>
-            <p className="text-sm text-gray-600">{t("dashboard.subtitle")}</p>
-          </div>
+    <Sidebar
+      collapsible="icon"
+      className={`border-r bg-sidebar ${
+        language === "ar" ? "border-l border-r-0" : ""
+      }`}
+    >
+      <SidebarHeader className="p-6 bg-gradient-to-r from-sidebar-accent/50 to-sidebar-accent/30">
+        <div
+          className={`flex items-center gap-3 ${
+            language === "ar" ? "flex-row-reverse" : ""
+          }`}
+        >
+          <Image
+            src="/logo.svg"
+            alt="AquaMonitor Logo"
+            width={150}
+            height={80}
+          />
         </div>
       </SidebarHeader>
 
@@ -226,9 +237,14 @@ export function AppSidebar() {
                 asChild
                 isActive={pathname === item.url}
                 tooltip={item.title}
-                className="h-14 rounded-2xl hover:bg-blue-50 data-[active=true]:bg-gradient-to-r data-[active=true]:from-blue-100 data-[active=true]:to-teal-100 data-[active=true]:text-blue-700 mb-2"
+                className="h-14 rounded-2xl hover:bg-sidebar-accent data-[active=true]:bg-gradient-to-r data-[active=true]:from-sidebar-accent data-[active=true]:to-sidebar-accent data-[active=true]:text-sidebar-accent-foreground mb-2"
               >
-                <Link href={item.url} className="flex items-center gap-4">
+                <Link
+                  href={item.url}
+                  className={`flex items-center gap-4 ${
+                    language === "ar" ? "flex-row-reverse text-right" : ""
+                  }`}
+                >
                   <item.icon className="h-6 w-6" />
                   <span className="font-medium text-base">{item.title}</span>
                 </Link>
@@ -240,38 +256,58 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4">
         <div className="space-y-3">
-          {/* Language Toggle */}
-          <div className="flex gap-2 group-data-[collapsible=icon]:flex-col">
-            <Button
-              variant={language === "fr" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setLanguage("fr")}
-              className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 group-data-[collapsible=icon]:w-full"
+          {/* User info */}
+          {user && (
+            <div
+              className={`flex items-center gap-3 p-3 rounded-2xl bg-sidebar-accent/50 group-data-[collapsible=icon]:justify-center ${
+                language === "ar" ? "flex-row-reverse" : ""
+              }`}
             >
-              <Globe className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
-              <span className="group-data-[collapsible=icon]:hidden">FR</span>
-            </Button>
-            <Button
-              variant={language === "ar" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setLanguage("ar")}
-              className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 group-data-[collapsible=icon]:w-full"
-            >
-              <Globe className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
-              <span className="group-data-[collapsible=icon]:hidden">AR</span>
-            </Button>
-          </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm">
+                {user.firstName?.charAt(0) || user.email.charAt(0)}
+              </div>
+              <div
+                className={`group-data-[collapsible=icon]:hidden flex-1 ${
+                  language === "ar" ? "text-right" : ""
+                }`}
+              >
+                <p className="font-medium text-sidebar-foreground text-sm">
+                  {user.firstName} {user.lastName}
+                </p>
+                <Badge
+                  className={`${getRoleColor(user.role)} text-xs mt-1 ${
+                    language === "ar" ? "self-end" : ""
+                  }`}
+                >
+                  <span
+                    className={`flex items-center gap-1 ${
+                      language === "ar" ? "flex-row-reverse" : ""
+                    }`}
+                  >
+                    {getRoleIcon(user.role)}
+                    {getRoleLabel(user.role)}
+                  </span>
+                </Badge>
+              </div>
+            </div>
+          )}
 
           {/* Logout Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={logout}
-            className="w-full rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            className={`w-full rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive ${
+              language === "ar" ? "flex-row-reverse" : ""
+            }`}
           >
-            <LogOut className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+            <LogOut
+              className={`h-4 w-4 group-data-[collapsible=icon]:mr-0 ${
+                language === "ar" ? "ml-2" : "mr-2"
+              }`}
+            />
             <span className="group-data-[collapsible=icon]:hidden">
-              Déconnexion
+              {language === "ar" ? "تسجيل الخروج" : "Déconnexion"}
             </span>
           </Button>
         </div>

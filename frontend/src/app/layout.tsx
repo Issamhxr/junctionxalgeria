@@ -1,22 +1,33 @@
 import type React from "react";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { LanguageProvider } from "@/components/language-context";
-import { AuthProvider } from "@/contexts/auth-context";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { HeaderUserDetails } from "@/components/header-user-details";
+import { ClientLayoutWrapper } from "@/components/client-layout-wrapper";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AquaMonitor - Gestion des Bassins Piscicoles",
-  description: "Surveillance intelligente des bassins piscicoles en Algérie",
+  title: "AquaCulture Algeria - Système de Surveillance Aquacole",
+  description:
+    "Système intelligent de surveillance et gestion des fermes aquacoles en Algérie",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AquaCulture DZ",
+  },
+  openGraph: {
+    title: "AquaCulture Algeria",
+    description: "Système intelligent de surveillance aquacole",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({
@@ -25,28 +36,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
-        <AuthProvider>
-          <LanguageProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4 bg-white">
-                  <div className="flex items-center gap-2">
-                    <SidebarTrigger className="-ml-1" />
-                    <div className="h-4 w-px bg-gray-200" />
-                    <h1 className="font-semibold text-gray-800">AquaMonitor</h1>
-                  </div>
-                  <HeaderUserDetails />
-                </header>
-                <main className="flex-1 overflow-auto bg-slate-50">
-                  {children}
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
-          </LanguageProvider>
-        </AuthProvider>
+    <html lang="fr" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#3b82f6" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="AquaCulture DZ" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="msapplication-TileColor" content="#3b82f6" />
+        <meta
+          name="msapplication-TileImage"
+          content="/icons/icon-192x192.png"
+        />
+      </head>
+      <body className={outfit.className} suppressHydrationWarning>
+        <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
       </body>
     </html>
   );

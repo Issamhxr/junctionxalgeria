@@ -1,10 +1,7 @@
-// API Configuration - Use proxy in development, direct URL in production
-const API_BASE_URL =
-  process.env.NODE_ENV === "development"
-    ? "" // Use proxy in development
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+// API Configuration - Dummy frontend-only (no backend calls)
+const API_BASE_URL = "";
 
-// API Client class
+// API Client class - Frontend-only with dummy data
 class ApiClient {
   private baseURL: string;
 
@@ -12,80 +9,123 @@ class ApiClient {
     this.baseURL = baseURL;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-
-    // Get token from localStorage
-    const token = localStorage.getItem("auth_token");
-
-    const config: RequestInit = {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      console.log("API Request:", {
-        url,
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("API request failed:", error);
-      throw error;
-    }
-  }
-
-  // Auth endpoints
+  // Dummy authentication endpoints (frontend-only)
   async login(email: string, password: string) {
-    return this.request<{
-      success: boolean;
+    // This is handled by the auth context now - just return success
+    return {
+      success: true,
       data: {
-        user: any;
-        token: string;
-      };
-    }>("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
+        user: null, // Will be set by auth context
+        token: `dummy_token_${Date.now()}`,
+      },
+    };
   }
 
   async logout() {
-    return this.request<{ success: boolean }>("/api/auth/logout", {
-      method: "POST",
-    });
+    // This is handled by the auth context now
+    return { success: true };
   }
 
   async getMe() {
-    return this.request<{
-      success: boolean;
+    // This is handled by the auth context now
+    return {
+      success: true,
       data: {
-        user: any;
-      };
-    }>("/api/auth/me");
+        user: null,
+      },
+    };
   }
 
-  // Ponds endpoints
+  // Dummy ponds/basins data (frontend-only)
   async getPonds() {
-    return this.request<{
-      success: boolean;
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    return {
+      success: true,
       data: {
-        ponds: Basin[];
-      };
-    }>("/api/ponds");
+        ponds: [
+          {
+            id: "1",
+            name: "Bassin A1",
+            type: "freshwater",
+            volume: 1000,
+            depth: 2.5,
+            temperature: 24.5,
+            ph: 7.2,
+            oxygen: 8.5,
+            salinity: 0.1,
+            ammonia: 0.5,
+            nitrite: 0.1,
+            nitrate: 5.0,
+            waterLevel: 1.5,
+            farm: {
+              id: "farm1",
+              name: "Ferme Aquacole Nord",
+              location: "Alger",
+            },
+            sensorData: [
+              {
+                temperature: 24.5,
+                ph: 7.2,
+                oxygen: 8.5,
+                salinity: 0.1,
+                ammonia: 0.5,
+                nitrite: 0.1,
+                nitrate: 5.0,
+                waterLevel: 1.5,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [
+              {
+                id: "alert1",
+                type: "temperature",
+                severity: "warning",
+                message: "Température légèrement élevée",
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            _count: { alerts: 1 },
+          },
+          {
+            id: "2",
+            name: "Bassin B2",
+            type: "saltwater",
+            volume: 1500,
+            depth: 3.0,
+            temperature: 22.8,
+            ph: 8.1,
+            oxygen: 7.8,
+            salinity: 35.0,
+            ammonia: 0.3,
+            nitrite: 0.05,
+            nitrate: 3.0,
+            waterLevel: 2.0,
+            farm: {
+              id: "farm2",
+              name: "Ferme Marine Sud",
+              location: "Oran",
+            },
+            sensorData: [
+              {
+                temperature: 22.8,
+                ph: 8.1,
+                oxygen: 7.8,
+                salinity: 35.0,
+                ammonia: 0.3,
+                nitrite: 0.05,
+                nitrate: 3.0,
+                waterLevel: 2.0,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+            alerts: [],
+            _count: { alerts: 0 },
+          },
+        ],
+      },
+    };
   }
 
   // Alias for getPonds - used in frontend as getBasins
@@ -94,49 +134,103 @@ class ApiClient {
   }
 
   async getPond(id: string) {
-    return this.request<{
-      success: boolean;
-      data: {
-        pond: Basin;
-      };
-    }>(`/api/ponds/${id}`);
+    const ponds = await this.getPonds();
+    const pond = ponds.data.ponds.find((p) => p.id === id);
+
+    if (!pond) {
+      throw new Error("Pond not found");
+    }
+
+    return {
+      success: true,
+      data: { pond },
+    };
   }
 
-  // Sensor data endpoints
+  // Dummy sensor data endpoints
   async addSensorData(pondId: string, data: any) {
-    return this.request<{
-      success: boolean;
-      data: any;
-    }>("/api/sensors/data", {
-      method: "POST",
-      body: JSON.stringify({ pondId, ...data }),
-    });
-  }
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
-  // Dashboard endpoints
-  async getDashboardStats() {
-    return this.request<{
-      success: boolean;
-      data: any;
-    }>("/api/dashboard/stats");
-  }
-
-  // Alerts endpoints
-  async getAlerts() {
-    return this.request<{
-      success: boolean;
+    return {
+      success: true,
       data: {
-        alerts: any[];
-      };
-    }>("/api/alerts");
+        id: Date.now().toString(),
+        pondId,
+        ...data,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
+  // Dummy dashboard endpoints
+  async getDashboardStats() {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    return {
+      success: true,
+      data: {
+        totalPonds: 12,
+        activePonds: 10,
+        totalAlerts: 3,
+        criticalAlerts: 1,
+        averageTemperature: 23.5,
+        averagePh: 7.8,
+        averageOxygen: 8.2,
+      },
+    };
+  }
+
+  // Dummy alerts endpoints
+  async getAlerts() {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    return {
+      success: true,
+      data: {
+        alerts: [
+          {
+            id: "alert1",
+            pondId: "1",
+            farmId: "farm1",
+            type: "temperature",
+            severity: "warning",
+            parameter: "temperature",
+            value: 26.5,
+            threshold: 25.0,
+            message: "Température élevée détectée",
+            isRead: false,
+            isResolved: false,
+            createdAt: new Date(Date.now() - 60000).toISOString(),
+          },
+          {
+            id: "alert2",
+            pondId: "2",
+            farmId: "farm2",
+            type: "oxygen",
+            severity: "critical",
+            parameter: "oxygen",
+            value: 5.2,
+            threshold: 6.0,
+            message: "Niveau d'oxygène critique",
+            isRead: false,
+            isResolved: false,
+            createdAt: new Date(Date.now() - 120000).toISOString(),
+          },
+        ],
+      },
+    };
   }
 
   async markAlertAsRead(alertId: string) {
-    return this.request<{
-      success: boolean;
-    }>(`/api/alerts/acknowledge/${alertId}`, {
-      method: "POST",
-    });
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    return {
+      success: true,
+    };
   }
 
   // Centres endpoints (mock data for now)
@@ -407,6 +501,11 @@ export interface Basin {
   ph?: number;
   oxygen?: number;
   salinity?: number;
+  turbidity?: number; // MES (Matières En Suspension) - NTU
+  ammonia?: number;
+  nitrite?: number;
+  nitrate?: number;
+  waterLevel?: number;
   farm: {
     id: string;
     name: string;
@@ -417,6 +516,11 @@ export interface Basin {
     ph: number;
     oxygen: number;
     salinity: number;
+    turbidity?: number; // MES (Matières En Suspension) - NTU
+    ammonia: number;
+    nitrite: number;
+    nitrate: number;
+    waterLevel: number;
     timestamp: string;
   }[];
   alerts?: {
@@ -438,10 +542,11 @@ export interface SensorData {
   ph: number;
   oxygen: number;
   salinity: number;
-  turbidity?: number;
-  ammonia?: number;
-  nitrite?: number;
-  nitrate?: number;
+  turbidity?: number; // MES (Matières En Suspension) - NTU
+  ammonia: number;
+  nitrite: number;
+  nitrate: number;
+  waterLevel: number;
   timestamp: string;
 }
 

@@ -43,6 +43,7 @@ export function DataEntryPage() {
     ammonia: "",
     nitrite: "",
     nitrate: "",
+    waterLevel: "",
     notes: "",
   });
 
@@ -135,6 +136,7 @@ export function DataEntryPage() {
         ammonia: formData.ammonia ? parseFloat(formData.ammonia) : undefined,
         nitrite: formData.nitrite ? parseFloat(formData.nitrite) : undefined,
         nitrate: formData.nitrate ? parseFloat(formData.nitrate) : undefined,
+        waterLevel: formData.waterLevel ? parseFloat(formData.waterLevel) : undefined,
         notes: formData.notes || undefined,
       };
 
@@ -150,6 +152,7 @@ export function DataEntryPage() {
         ammonia: "",
         nitrite: "",
         nitrate: "",
+        waterLevel: "",
         notes: "",
       });
       
@@ -194,13 +197,13 @@ export function DataEntryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "normal":
-        return "border-green-200 bg-green-50";
+        return "border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30";
       case "warning":
-        return "border-orange-200 bg-orange-50";
+        return "border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/30";
       case "critical":
-        return "border-red-200 bg-red-50";
+        return "border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30";
       default:
-        return "border-gray-200 bg-white";
+        return "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800";
     }
   };
 
@@ -208,10 +211,10 @@ export function DataEntryPage() {
 
   if (loading) {
     return (
-      <div className="p-6 min-h-screen flex items-center justify-center">
+      <div className="p-6 min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement des bassins...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-gray-600 dark:text-gray-300" />
+          <p className="text-gray-600 dark:text-gray-300">Chargement des bassins...</p>
         </div>
       </div>
     );
@@ -220,31 +223,31 @@ export function DataEntryPage() {
   // Check if user has permission to enter data
   if (user?.role !== "OPERATOR" && user?.role !== "FARMER" && user?.role !== "ADMIN") {
     return (
-      <div className="p-6 text-center">
+      <div className="p-6 text-center bg-gray-50 dark:bg-gray-900 min-h-screen">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600">Accès non autorisé</p>
+        <p className="text-red-600 dark:text-red-400">Accès non autorisé</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
+    <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-100">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-blue-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">Saisie des Données</h1>
-            <p className="text-gray-600 text-lg">
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100">Saisie des Données</h1>
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
               Enregistrement des mesures de qualité d'eau
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200 px-4 py-2">
+            <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-4 py-2">
               <Database className="h-4 w-4 mr-2" />
               Opérateur
             </Badge>
             {lastSaved && (
-              <Badge className="bg-green-100 text-green-700 border-green-200 px-4 py-2">
+              <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 px-4 py-2">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Sauvé à {lastSaved}
               </Badge>
@@ -254,16 +257,16 @@ export function DataEntryPage() {
       </div>
 
       {/* Basin Selection */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
+      <Card className="rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-800">
+          <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-100">
             Sélection du Bassin
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="basin-select" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="basin-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bassin
               </Label>
               <Select value={selectedBasin} onValueChange={setSelectedBasin}>
@@ -280,11 +283,11 @@ export function DataEntryPage() {
               </Select>
             </div>
             {selectedBasinData && (
-              <div className="bg-blue-50 rounded-2xl p-4">
-                <h3 className="font-semibold text-blue-800 mb-2">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-4">
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
                   {selectedBasinData.name}
                 </h3>
-                <div className="text-sm text-blue-600">
+                <div className="text-sm text-blue-600 dark:text-blue-400">
                   <p>Ferme: {selectedBasinData.farm.name}</p>
                   <p>Type: {selectedBasinData.type}</p>
                   <p>Volume: {selectedBasinData.volume || 'N/A'} m³</p>
@@ -298,9 +301,9 @@ export function DataEntryPage() {
       {/* Data Entry Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Primary Parameters */}
-        <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <Card className="rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Thermometer className="h-6 w-6 text-orange-500" />
               Paramètres Principaux
             </CardTitle>
@@ -308,7 +311,7 @@ export function DataEntryPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="temperature" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="temperature" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Température (°C) *
                 </Label>
                 <Input
@@ -320,11 +323,11 @@ export function DataEntryPage() {
                   className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.temperature, "temperature"))}`}
                   placeholder="ex: 22.5"
                 />
-                <p className="text-xs text-gray-500 mt-1">Optimal: 18-30°C</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: 18-30°C</p>
               </div>
 
               <div>
-                <Label htmlFor="ph" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="ph" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   pH *
                 </Label>
                 <Input
@@ -336,11 +339,11 @@ export function DataEntryPage() {
                   className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.ph, "ph"))}`}
                   placeholder="ex: 7.2"
                 />
-                <p className="text-xs text-gray-500 mt-1">Optimal: 6.5-8.5</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: 6.5-8.5</p>
               </div>
 
               <div>
-                <Label htmlFor="oxygen" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="oxygen" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Oxygène Dissous (mg/L) *
                 </Label>
                 <Input
@@ -352,11 +355,11 @@ export function DataEntryPage() {
                   className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.oxygen, "oxygen"))}`}
                   placeholder="ex: 6.8"
                 />
-                <p className="text-xs text-gray-500 mt-1">Optimal: >5.0 mg/L</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: >5.0 mg/L</p>
               </div>
 
               <div>
-                <Label htmlFor="salinity" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="salinity" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Salinité (ppt) *
                 </Label>
                 <Input
@@ -368,16 +371,16 @@ export function DataEntryPage() {
                   className={`mt-2 rounded-xl ${getStatusColor(getParameterStatus(formData.salinity, "salinity"))}`}
                   placeholder="ex: 34.5"
                 />
-                <p className="text-xs text-gray-500 mt-1">Selon le type de bassin</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Selon le type de bassin</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Secondary Parameters */}
-        <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <Card className="rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Activity className="h-6 w-6 text-green-500" />
               Paramètres Secondaires
             </CardTitle>
@@ -385,8 +388,8 @@ export function DataEntryPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="turbidity" className="text-sm font-medium text-gray-700">
-                  Turbidité (NTU)
+                <Label htmlFor="turbidity" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  MES/Turbidité (NTU)
                 </Label>
                 <Input
                   id="turbidity"
@@ -397,10 +400,11 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 2.5"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;5.0 NTU</p>
               </div>
 
               <div>
-                <Label htmlFor="ammonia" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="ammonia" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Ammoniac (mg/L)
                 </Label>
                 <Input
@@ -412,10 +416,11 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 0.15"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;0.2 mg/L</p>
               </div>
 
               <div>
-                <Label htmlFor="nitrite" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="nitrite" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Nitrite (mg/L)
                 </Label>
                 <Input
@@ -427,10 +432,11 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 0.05"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;0.1 mg/L</p>
               </div>
 
               <div>
-                <Label htmlFor="nitrate" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="nitrate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Nitrate (mg/L)
                 </Label>
                 <Input
@@ -442,21 +448,40 @@ export function DataEntryPage() {
                   className="mt-2 rounded-xl"
                   placeholder="ex: 1.2"
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Optimal: &lt;40 mg/L</p>
+              </div>
+
+              <div>
+                <Label htmlFor="waterLevel" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Niveau d'eau (m)
+                </Label>
+                <Input
+                  id="waterLevel"
+                  type="number"
+                  step="0.1"
+                  min="1.0"
+                  max="5.0"
+                  value={formData.waterLevel}
+                  onChange={(e) => handleInputChange("waterLevel", e.target.value)}
+                  className="mt-2 rounded-xl"
+                  placeholder="ex: 2.5"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: 1.0 - 5.0 m</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Notes */}
-        <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <Card className="rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-800">
+            <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-100">
               Notes et Observations
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Notes
               </Label>
               <Textarea

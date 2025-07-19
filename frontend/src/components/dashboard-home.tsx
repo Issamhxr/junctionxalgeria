@@ -565,7 +565,7 @@ export function DashboardHome() {
       updatePHHistory();
       updateTemperatureHistory();
       setLastUpdate(new Date());
-    }, 5000); // Update every 5 seconds instead of 30
+    }, 1000); // Update every 5 seconds instead of 30
 
     return () => clearInterval(interval);
   }, [
@@ -585,7 +585,7 @@ export function DashboardHome() {
 
     const sensorInterval = setInterval(() => {
       updateSensorReadings();
-    }, 15000); // Update sensor readings every 15 seconds
+    }, 1000); // Update sensor readings every 15 seconds
 
     return () => clearInterval(sensorInterval);
   }, [autoRefresh, isInitialized, updateSensorReadings]);
@@ -1069,156 +1069,96 @@ export function DashboardHome() {
   }
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header with Real-time Status */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-100">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-sm border border-blue-100 dark:border-gray-700">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-3">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2 md:mb-3">
               Tableau de Bord Temps Réel
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-sm md:text-lg">
               Surveillance continue de l'aquaculture
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-2 justify-center sm:justify-start">
               {isConnected ? (
-                <Wifi className="h-5 w-5 text-green-500" />
+                <Wifi className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
               ) : (
-                <WifiOff className="h-5 w-5 text-red-500" />
+                <WifiOff className="h-4 w-4 md:h-5 md:w-5 text-red-500" />
               )}
               <span
                 className={`text-sm ${
-                  isConnected ? "text-green-600" : "text-red-600"
+                  isConnected
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
                 }`}
               >
                 {isConnected ? "Connecté" : "Déconnecté"}
               </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`rounded-xl ${
-                autoRefresh ? "bg-green-50 border-green-200" : "bg-gray-50"
-              }`}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${autoRefresh ? "animate-spin" : ""}`}
-              />
-              {autoRefresh ? "Auto" : "Manuel"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualRefresh}
-              disabled={loading}
-              className="rounded-xl"
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-              />
-              Actualiser
-            </Button>
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200 px-4 py-2">
-              <Clock className="h-4 w-4 mr-2" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`rounded-xl text-xs ${
+                  autoRefresh
+                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
+                    : "bg-gray-50 dark:bg-gray-800"
+                }`}
+              >
+                <RefreshCw
+                  className={`h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 ${
+                    autoRefresh ? "animate-spin" : ""
+                  }`}
+                />
+                {autoRefresh ? "Auto" : "Manuel"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={loading}
+                className="rounded-xl text-xs"
+              >
+                <RefreshCw
+                  className={`h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 ${
+                    loading ? "animate-spin" : ""
+                  }`}
+                />
+                Actualiser
+              </Button>
+            </div>
+            <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-3 py-1 md:px-4 md:py-2 text-xs">
+              <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               {lastUpdate.toLocaleTimeString()}
             </Badge>
           </div>
         </div>
       </div>
 
-      {/* Live System Metrics */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-blue-600 mb-1">
-                  Disponibilité Système
-                </p>
-                <p className="text-3xl font-bold text-blue-800">
-                  {systemMetrics.systemUptime}%
-                </p>
-              </div>
-              <Zap className="h-12 w-12 text-blue-600" />
-            </div>
-            <Progress value={systemMetrics.systemUptime} className="h-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-green-100 bg-gradient-to-br from-green-50 to-green-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-green-600 mb-1">
-                  Transmission Données
-                </p>
-                <p className="text-3xl font-bold text-green-800">
-                  {systemMetrics.dataTransmission}%
-                </p>
-              </div>
-              <Database className="h-12 w-12 text-green-600" />
-            </div>
-            <Progress value={systemMetrics.dataTransmission} className="h-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-purple-100 bg-gradient-to-br from-purple-50 to-purple-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-purple-600 mb-1">
-                  Opérateurs Actifs
-                </p>
-                <p className="text-3xl font-bold text-purple-800">
-                  {systemMetrics.activeOperators}
-                </p>
-              </div>
-              <Users className="h-12 w-12 text-purple-600" />
-            </div>
-            <div className="text-xs text-purple-600">
-              {systemMetrics.maintenanceScheduled} maintenance programmée
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-orange-100 bg-gradient-to-br from-orange-50 to-orange-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-orange-600 mb-1">Latence Réseau</p>
-                <p className="text-3xl font-bold text-orange-800">
-                  {systemMetrics.networkLatency}ms
-                </p>
-              </div>
-              <Activity className="h-12 w-12 text-orange-600" />
-            </div>
-            <div className="text-xs text-orange-600">
-              Temps de réponse moyen
-            </div>
-          </CardContent>
-        </Card>
-      </div> */}
-
       {/* Live Trend Analysis */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {Object.entries(trendData).map(([param, data]) => (
-          <Card key={param} className="rounded-3xl border-gray-100 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1 capitalize">
-                    {param}
+          <Card
+            key={param}
+            className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800"
+          >
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 md:mb-4">
+                <div className="mb-2 md:mb-0">
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mb-1 capitalize">
+                    {param === "ph" ? "pH" : param}
                   </p>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-lg md:text-2xl font-bold text-gray-800 dark:text-gray-100">
                     {data.current}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 md:gap-2">
                   {getTrendIcon(data.trend)}
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
                     {data.trend === "stable" ? "=" : data.change}
                   </span>
                 </div>
@@ -1228,77 +1168,85 @@ export function DashboardHome() {
         ))}
       </div>
 
-      {/* pH Analytics Graph */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <LineChart className="h-6 w-6 text-blue-500" />
-              Analyse Temporelle des Paramètres
+      {/* pH Analytics Graph - Mobile Optimized */}
+      <Card className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+            <CardTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <LineChart className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+              Analyse Temporelle
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={selectedParameter === "ph" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedParameter("ph")}
-                className="rounded-xl"
-              >
-                <Droplets className="h-4 w-4 mr-2" />
-                pH
-              </Button>
-              <Button
-                variant={
-                  selectedParameter === "temperature" ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => setSelectedParameter("temperature")}
-                className="rounded-xl"
-              >
-                <Thermometer className="h-4 w-4 mr-2" />
-                Température
-              </Button>
-              <Badge className="bg-green-100 text-green-700 border-green-200">
-                <Activity className="h-4 w-4 mr-1" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex gap-2">
+                <Button
+                  variant={selectedParameter === "ph" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedParameter("ph")}
+                  className="rounded-xl text-xs flex-1 sm:flex-none"
+                >
+                  <Droplets className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  pH
+                </Button>
+                <Button
+                  variant={
+                    selectedParameter === "temperature" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setSelectedParameter("temperature")}
+                  className="rounded-xl text-xs flex-1 sm:flex-none"
+                >
+                  <Thermometer className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  Temp
+                </Button>
+              </div>
+              <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 text-xs">
+                <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                 Temps Réel
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Current Values Display */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-2xl">
-              <div className="text-2xl font-bold text-blue-700">
+        <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6">
+          {/* Current Values Display - Mobile Optimized */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="text-center p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {selectedParameter === "ph"
                   ? phHistory[phHistory.length - 1]?.value
                   : `${
                       temperatureHistory[temperatureHistory.length - 1]?.value
                     }°C`}
               </div>
-              <div className="text-sm text-blue-600">Valeur Actuelle</div>
+              <div className="text-xs md:text-sm text-blue-600 dark:text-blue-400">
+                Actuelle
+              </div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-2xl">
-              <div className="text-2xl font-bold text-green-700">
+            <div className="text-center p-3 md:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-green-700 dark:text-green-300">
                 {selectedParameter === "ph"
                   ? Math.max(...phHistory.map((d) => d.value)).toFixed(2)
                   : `${Math.max(
                       ...temperatureHistory.map((d) => d.value)
                     ).toFixed(1)}°C`}
               </div>
-              <div className="text-sm text-green-600">Maximum 24h</div>
+              <div className="text-xs md:text-sm text-green-600 dark:text-green-400">
+                Max 24h
+              </div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-2xl">
-              <div className="text-2xl font-bold text-orange-700">
+            <div className="text-center p-3 md:p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-orange-700 dark:text-orange-300">
                 {selectedParameter === "ph"
                   ? Math.min(...phHistory.map((d) => d.value)).toFixed(2)
                   : `${Math.min(
                       ...temperatureHistory.map((d) => d.value)
                     ).toFixed(1)}°C`}
               </div>
-              <div className="text-sm text-orange-600">Minimum 24h</div>
+              <div className="text-xs md:text-sm text-orange-600 dark:text-orange-400">
+                Min 24h
+              </div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-2xl">
-              <div className="text-2xl font-bold text-purple-700">
+            <div className="text-center p-3 md:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-purple-700 dark:text-purple-300">
                 {selectedParameter === "ph"
                   ? (
                       phHistory.reduce((sum, d) => sum + d.value, 0) /
@@ -1309,45 +1257,57 @@ export function DashboardHome() {
                       temperatureHistory.length
                     ).toFixed(1)}°C`}
               </div>
-              <div className="text-sm text-purple-600">Moyenne 24h</div>
+              <div className="text-xs md:text-sm text-purple-600 dark:text-purple-400">
+                Moyenne
+              </div>
             </div>
           </div>
 
-          {/* Chart */}
-          <div className="bg-white rounded-2xl p-4 border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">
-                Évolution sur 24h (mise à jour toutes les 30 min)
+          {/* Chart - Mobile Optimized */}
+          <div className="bg-white dark:bg-gray-800/50 rounded-xl md:rounded-2xl p-2 md:p-4 border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 space-y-2 md:space-y-0">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm md:text-base">
+                Évolution sur 24h
               </h3>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-gray-600">Normal</span>
+              <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-300">
+                    Normal
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-gray-600">Attention</span>
+                <div className="flex items-center gap-1 md:gap-2">
+                  <div className="w-2 h-2 md:w-3 md:h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-300">
+                    Attention
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-600">Critique</span>
+                <div className="flex items-center gap-1 md:gap-2">
+                  <div className="w-2 h-2 md:w-3 md:h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-300">
+                    Critique
+                  </span>
                 </div>
               </div>
             </div>
-            <ParameterChart
-              data={selectedParameter === "ph" ? phHistory : temperatureHistory}
-              parameter={selectedParameter}
-            />
+            <div className="h-60 md:h-80">
+              <ParameterChart
+                data={
+                  selectedParameter === "ph" ? phHistory : temperatureHistory
+                }
+                parameter={selectedParameter}
+              />
+            </div>
           </div>
 
-          {/* Insights */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-2xl">
-              <h4 className="font-medium text-blue-700 mb-2 flex items-center gap-2">
+          {/* Insights - Mobile Optimized */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl md:rounded-2xl">
+              <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-2 text-sm md:text-base">
                 <TrendingUp className="h-4 w-4" />
                 Tendance Récente
               </h4>
-              <p className="text-sm text-blue-600">
+              <p className="text-xs md:text-sm text-blue-600 dark:text-blue-400">
                 {selectedParameter === "ph"
                   ? phHistory[phHistory.length - 1]?.value >
                     phHistory[phHistory.length - 6]?.value
@@ -1359,14 +1319,14 @@ export function DashboardHome() {
                   : "📉 Température stable ou en baisse"}
               </p>
             </div>
-            <div className="p-4 bg-green-50 rounded-2xl">
-              <h4 className="font-medium text-green-700 mb-2 flex items-center gap-2">
+            <div className="p-3 md:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl md:rounded-2xl">
+              <h4 className="font-medium text-green-700 dark:text-green-300 mb-2 flex items-center gap-2 text-sm md:text-base">
                 <Shield className="h-4 w-4" />
                 Prédiction IA
               </h4>
-              <p className="text-sm text-green-600">
+              <p className="text-xs md:text-sm text-green-600 dark:text-green-400">
                 {selectedParameter === "ph"
-                  ? "Maintien dans la plage optimale prévu pour les 2 prochaines heures"
+                  ? "Maintien dans la plage optimale prévu"
                   : "Conditions thermiques stables attendues"}
               </p>
             </div>
@@ -1374,36 +1334,42 @@ export function DashboardHome() {
         </CardContent>
       </Card>
 
-      {/* Production Overview */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-green-500" />
-            Production en Temps Réel
+      {/* Production Overview - Mobile Optimized */}
+      <Card className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm">
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+            Production Temps Réel
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-green-50 rounded-2xl">
-              <div className="text-2xl font-bold text-green-700">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+            <div className="text-center p-3 md:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-green-700 dark:text-green-300">
                 {systemMetrics.production.daily} kg
               </div>
-              <div className="text-sm text-green-600">Aujourd'hui</div>
+              <div className="text-xs md:text-sm text-green-600 dark:text-green-400">
+                Aujourd'hui
+              </div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-2xl">
-              <div className="text-2xl font-bold text-blue-700">
+            <div className="text-center p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {systemMetrics.production.weekly} kg
               </div>
-              <div className="text-sm text-blue-600">Cette semaine</div>
+              <div className="text-xs md:text-sm text-blue-600 dark:text-blue-400">
+                Semaine
+              </div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-2xl">
-              <div className="text-2xl font-bold text-purple-700">
+            <div className="text-center p-3 md:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-purple-700 dark:text-purple-300">
                 {systemMetrics.production.monthly} kg
               </div>
-              <div className="text-sm text-purple-600">Ce mois</div>
+              <div className="text-xs md:text-sm text-purple-600 dark:text-purple-400">
+                Mois
+              </div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-2xl">
-              <div className="text-2xl font-bold text-orange-700">
+            <div className="text-center p-3 md:p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-orange-700 dark:text-orange-300">
                 {Math.round(
                   (systemMetrics.production.monthly /
                     systemMetrics.production.target) *
@@ -1411,91 +1377,103 @@ export function DashboardHome() {
                 )}
                 %
               </div>
-              <div className="text-sm text-orange-600">Objectif atteint</div>
+              <div className="text-xs md:text-sm text-orange-600 dark:text-orange-400">
+                Objectif
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Real-time Activity Feed */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <Bell className="h-6 w-6 text-blue-500" />
-              Activité en Temps Réel
+      {/* Real-time Activity Feed - Mobile Optimized */}
+      <Card className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+            <CardTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <Bell className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+              Activité Temps Réel
             </CardTitle>
-            <Badge className="bg-green-100 text-green-700 border-green-200">
-              <Activity className="h-4 w-4 mr-1" />
+            <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 text-xs w-fit">
+              <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               Live
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="p-4 md:p-6">
+          <div className="space-y-2 md:space-y-3">
             {recentActivity.map((activity) => (
               <div
                 key={activity.id}
-                className={`flex items-center gap-4 p-4 rounded-2xl border ${getSeverityColor(
+                className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl border ${getSeverityColor(
                   activity.severity
                 )}`}
               >
                 <div className="flex-shrink-0">
                   {getActivityIcon(activity.type)}
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{activity.message}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs md:text-sm font-medium truncate">
+                    {activity.message}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {getTimeAgo(activity.timestamp)}
                   </p>
                 </div>
-                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-current rounded-full animate-pulse flex-shrink-0"></div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Water Quality Distribution */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Droplets className="h-6 w-6 text-blue-500" />
-            Qualité de l'Eau en Temps Réel
+      {/* Water Quality Distribution - Mobile Optimized */}
+      <Card className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm">
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            <Droplets className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+            Qualité Eau Temps Réel
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-emerald-50 rounded-2xl">
-              <div className="text-2xl font-bold text-emerald-700">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="text-center p-3 md:p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                 {systemMetrics.waterQuality.excellent}
               </div>
-              <div className="text-sm text-emerald-600">Excellente</div>
+              <div className="text-xs md:text-sm text-emerald-600 dark:text-emerald-400">
+                Excellente
+              </div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-2xl">
-              <div className="text-2xl font-bold text-green-700">
+            <div className="text-center p-3 md:p-4 bg-green-50 dark:bg-green-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-green-700 dark:text-green-300">
                 {systemMetrics.waterQuality.good}
               </div>
-              <div className="text-sm text-green-600">Bonne</div>
+              <div className="text-xs md:text-sm text-green-600 dark:text-green-400">
+                Bonne
+              </div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-2xl">
-              <div className="text-2xl font-bold text-yellow-700">
+            <div className="text-center p-3 md:p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                 {systemMetrics.waterQuality.fair}
               </div>
-              <div className="text-sm text-yellow-600">Correcte</div>
+              <div className="text-xs md:text-sm text-yellow-600 dark:text-yellow-400">
+                Correcte
+              </div>
             </div>
-            <div className="text-center p-4 bg-red-50 rounded-2xl">
-              <div className="text-2xl font-bold text-red-700">
+            <div className="text-center p-3 md:p-4 bg-red-50 dark:bg-red-900/20 rounded-xl md:rounded-2xl">
+              <div className="text-lg md:text-2xl font-bold text-red-700 dark:text-red-300">
                 {systemMetrics.waterQuality.poor}
               </div>
-              <div className="text-sm text-red-600">Mauvaise</div>
+              <div className="text-xs md:text-sm text-red-600 dark:text-red-400">
+                Mauvaise
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Live Basins Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Live Basins Grid - Mobile Optimized */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {basins.slice(0, 9).map((basin) => {
           const status = getBasinStatus(basin);
           const currentReading =
@@ -1504,96 +1482,96 @@ export function DashboardHome() {
           return (
             <Card
               key={basin.id}
-              className="rounded-3xl border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
             >
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3 md:pb-4 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-gray-800">
+                  <CardTitle className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
                     {basin.name}
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <Badge
                       className={`${getStatusColor(
                         status
-                      )} rounded-full px-3 py-1 text-xs font-medium border`}
+                      )} rounded-full px-2 py-1 text-xs font-medium border`}
                     >
                       {status}
                     </Badge>
                   </div>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
                   {basin.farm.name} - {basin.farm.location}
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 md:space-y-4 p-4 md:p-6 pt-0">
                 {status !== "offline" && currentReading ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-orange-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Thermometer className="h-4 w-4 text-orange-500" />
-                        <span className="text-xs font-medium text-gray-600">
+                  <div className="grid grid-cols-2 gap-2 md:gap-3">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl md:rounded-2xl p-2 md:p-3">
+                      <div className="flex items-center gap-1 md:gap-2 mb-1">
+                        <Thermometer className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           Temp
                         </span>
                       </div>
-                      <div className="text-lg font-bold text-gray-800">
+                      <div className="text-sm md:text-lg font-bold text-gray-800 dark:text-gray-100">
                         {currentReading.temperature.toFixed(1)}°C
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Droplets className="h-4 w-4 text-blue-500" />
-                        <span className="text-xs font-medium text-gray-600">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl md:rounded-2xl p-2 md:p-3">
+                      <div className="flex items-center gap-1 md:gap-2 mb-1">
+                        <Droplets className="h-3 w-3 md:h-4 md:w-4 text-blue-500" />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           pH
                         </span>
                       </div>
-                      <div className="text-lg font-bold text-gray-800">
+                      <div className="text-sm md:text-lg font-bold text-gray-800 dark:text-gray-100">
                         {currentReading.ph.toFixed(1)}
                       </div>
                     </div>
 
-                    <div className="bg-green-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Activity className="h-4 w-4 text-green-500" />
-                        <span className="text-xs font-medium text-gray-600">
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-xl md:rounded-2xl p-2 md:p-3">
+                      <div className="flex items-center gap-1 md:gap-2 mb-1">
+                        <Activity className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           O2
                         </span>
                       </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {currentReading.oxygen.toFixed(1)} mg/L
+                      <div className="text-sm md:text-lg font-bold text-gray-800 dark:text-gray-100">
+                        {currentReading.oxygen.toFixed(1)}
                       </div>
                     </div>
 
-                    <div className="bg-teal-50 rounded-2xl p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Waves className="h-4 w-4 text-teal-500" />
-                        <span className="text-xs font-medium text-gray-600">
+                    <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl md:rounded-2xl p-2 md:p-3">
+                      <div className="flex items-center gap-1 md:gap-2 mb-1">
+                        <Waves className="h-3 w-3 md:h-4 md:w-4 text-teal-500" />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           Salinité
                         </span>
                       </div>
-                      <div className="text-lg font-bold text-gray-800">
-                        {currentReading.salinity.toFixed(1)} ppt
+                      <div className="text-sm md:text-lg font-bold text-gray-800 dark:text-gray-100">
+                        {currentReading.salinity.toFixed(1)}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <WifiOff className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">
+                  <div className="text-center py-4 md:py-8">
+                    <WifiOff className="h-6 w-6 md:h-8 md:w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500 text-xs md:text-sm">
                       Données non disponibles
                     </p>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between pt-2">
-                  <div className="text-xs text-gray-500">
-                    Dernière MAJ: {getTimeAgo(currentReading?.timestamp || "")}
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    MAJ: {getTimeAgo(currentReading?.timestamp || "")}
                   </div>
                   <Link
                     href={`/basin/${basin.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium"
                   >
                     Détails →
                   </Link>
@@ -1604,31 +1582,31 @@ export function DashboardHome() {
         })}
       </div>
 
-      {/* Advanced Analytics Section */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-purple-500" />
-            Analyses Prédictives & Corrélations
+      {/* Advanced Analytics Section - Mobile Optimized */}
+      <Card className="rounded-2xl md:rounded-3xl border-gray-100 dark:border-gray-700 shadow-sm">
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
+            Analyses Prédictives
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardContent className="p-4 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* Predictive Insights */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
+            <div className="space-y-3 md:space-y-4">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 text-sm md:text-base">
+                <Zap className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" />
                 Insights Prédictifs
               </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl border border-yellow-200">
+              <div className="space-y-2 md:space-y-3">
+                <div className="p-3 md:p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl md:rounded-2xl border border-yellow-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm font-medium text-orange-700">
+                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                    <span className="text-xs md:text-sm font-medium text-orange-700">
                       Risque pH Élevé
                     </span>
                   </div>
-                  <p className="text-xs text-orange-600">
+                  <p className="text-xs text-orange-600 mb-2">
                     Bassin C3 pourrait dépasser 8.5 dans 2h
                   </p>
                   <div className="mt-2">
@@ -1639,15 +1617,15 @@ export function DashboardHome() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                <div className="p-3 md:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl md:rounded-2xl border border-green-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-700">
+                    <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+                    <span className="text-xs md:text-sm font-medium text-green-700">
                       Conditions Optimales
                     </span>
                   </div>
-                  <p className="text-xs text-green-600">
-                    Bassin A1 maintient des paramètres excellents
+                  <p className="text-xs text-green-600 mb-2">
+                    Bassin A1 maintient paramètres excellents
                   </p>
                   <div className="mt-2">
                     <div className="text-xs text-green-500 mb-1">Stabilité</div>
@@ -1658,29 +1636,29 @@ export function DashboardHome() {
             </div>
 
             {/* Environmental Correlations */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-500" />
-                Corrélations Environnementales
+            <div className="space-y-3 md:space-y-4">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 text-sm md:text-base">
+                <Activity className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+                Corrélations
               </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-blue-50 rounded-2xl">
+              <div className="space-y-2 md:space-y-3">
+                <div className="p-3 md:p-4 bg-blue-50 rounded-xl md:rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-700">
-                      Température ↔ O2
+                    <span className="text-xs md:text-sm font-medium text-blue-700">
+                      Temp ↔ O2
                     </span>
                     <Badge className="bg-blue-100 text-blue-700 text-xs">
                       -0.85
                     </Badge>
                   </div>
                   <p className="text-xs text-blue-600">
-                    Corrélation négative forte détectée
+                    Corrélation négative forte
                   </p>
                 </div>
 
-                <div className="p-4 bg-purple-50 rounded-2xl">
+                <div className="p-3 md:p-4 bg-purple-50 rounded-xl md:rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-700">
+                    <span className="text-xs md:text-sm font-medium text-purple-700">
                       pH ↔ Salinité
                     </span>
                     <Badge className="bg-purple-100 text-purple-700 text-xs">
@@ -1692,9 +1670,9 @@ export function DashboardHome() {
                   </p>
                 </div>
 
-                <div className="p-4 bg-teal-50 rounded-2xl">
+                <div className="p-3 md:p-4 bg-teal-50 rounded-xl md:rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-teal-700">
+                    <span className="text-xs md:text-sm font-medium text-teal-700">
                       Turbidité ↔ Croissance
                     </span>
                     <Badge className="bg-teal-100 text-teal-700 text-xs">
@@ -1702,28 +1680,28 @@ export function DashboardHome() {
                     </Badge>
                   </div>
                   <p className="text-xs text-teal-600">
-                    Impact modéré sur la croissance
+                    Impact modéré sur croissance
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Smart Recommendations */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-green-500" />
+            <div className="space-y-3 md:space-y-4">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 text-sm md:text-base">
+                <Shield className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
                 Recommandations IA
               </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border border-green-200">
+              <div className="space-y-2 md:space-y-3">
+                <div className="p-3 md:p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl md:rounded-2xl border border-green-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Thermometer className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-700">
-                      Optimisation Température
+                    <Thermometer className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+                    <span className="text-xs md:text-sm font-medium text-green-700">
+                      Optimisation Temp
                     </span>
                   </div>
                   <p className="text-xs text-green-600 mb-2">
-                    Réduire de 1°C dans bassins B2-B5
+                    Réduire 1°C bassins B2-B5
                   </p>
                   <Button
                     size="sm"
@@ -1733,15 +1711,15 @@ export function DashboardHome() {
                   </Button>
                 </div>
 
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
+                <div className="p-3 md:p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl md:rounded-2xl border border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Droplets className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium text-blue-700">
+                    <Droplets className="h-3 w-3 md:h-4 md:w-4 text-blue-500" />
+                    <span className="text-xs md:text-sm font-medium text-blue-700">
                       Ajustement pH
                     </span>
                   </div>
                   <p className="text-xs text-blue-600 mb-2">
-                    Ajouter tampon dans bassin C3
+                    Ajouter tampon bassin C3
                   </p>
                   <Button
                     size="sm"
@@ -1751,10 +1729,10 @@ export function DashboardHome() {
                   </Button>
                 </div>
 
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl border border-orange-200">
+                <div className="p-3 md:p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl md:rounded-2xl border border-orange-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Activity className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm font-medium text-orange-700">
+                    <Activity className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                    <span className="text-xs md:text-sm font-medium text-orange-700">
                       Oxygénation
                     </span>
                   </div>
@@ -1767,151 +1745,6 @@ export function DashboardHome() {
                   >
                     Activer
                   </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Enhanced Alert Management */}
-      <Card className="rounded-3xl border-gray-100 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-red-500" />
-              Gestion Intelligente des Alertes
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-red-100 text-red-700 border-red-200">
-                {stats.criticalStatus} Critiques
-              </Badge>
-              <Badge className="bg-orange-100 text-orange-700 border-orange-200">
-                {stats.warningStatus} Attention
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Alert Priorities */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-500" />
-                Priorités & Actions
-              </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-red-50 rounded-2xl border border-red-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm font-medium text-red-700">
-                        Urgent - pH Critique
-                      </span>
-                    </div>
-                    <Badge className="bg-red-100 text-red-700 text-xs">
-                      2 min
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-red-600 mb-3">
-                    Bassin C3: pH 9.2 - Intervention immédiate requise
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 text-xs bg-red-600 hover:bg-red-700"
-                    >
-                      Intervenir
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs">
-                      Déléguer
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Thermometer className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm font-medium text-orange-700">
-                        Attention - Température
-                      </span>
-                    </div>
-                    <Badge className="bg-orange-100 text-orange-700 text-xs">
-                      15 min
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-orange-600 mb-3">
-                    Bassin A7: 31°C - Surveillance renforcée
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 text-xs bg-orange-600 hover:bg-orange-700"
-                    >
-                      Surveiller
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-xs">
-                      Programmer
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Smart Alert Patterns */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-purple-500" />
-                Patterns & Tendances
-              </h3>
-              <div className="space-y-3">
-                <div className="p-4 bg-purple-50 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-purple-500" />
-                    <span className="text-sm font-medium text-purple-700">
-                      Pattern Détecté
-                    </span>
-                  </div>
-                  <p className="text-xs text-purple-600 mb-2">
-                    Pics de température récurrents 14h-16h
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={85} className="flex-1 h-2" />
-                    <span className="text-xs text-purple-600">85%</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium text-blue-700">
-                      Évolution Hebdomadaire
-                    </span>
-                  </div>
-                  <p className="text-xs text-blue-600 mb-2">
-                    Réduction de 23% des alertes pH
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={77} className="flex-1 h-2" />
-                    <span className="text-xs text-blue-600">↓ 23%</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-green-50 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-700">
-                      Prédiction Positive
-                    </span>
-                  </div>
-                  <p className="text-xs text-green-600 mb-2">
-                    Stabilité attendue prochaines 48h
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={92} className="flex-1 h-2" />
-                    <span className="text-xs text-green-600">92%</span>
-                  </div>
                 </div>
               </div>
             </div>

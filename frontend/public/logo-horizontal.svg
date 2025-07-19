@@ -1,0 +1,63 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with subtle gradient -->
+  <rect width="200" height="60" rx="8" fill="url(#horizontalBg)"/>
+  
+  <!-- Logo section -->
+  <g transform="translate(10, 10)">
+    <!-- Main wave element -->
+    <path d="M0 20C8 12 16 8 24 12C32 16 40 20 40 20" 
+          stroke="url(#wave1)" 
+          stroke-width="3" 
+          fill="none" 
+          stroke-linecap="round"/>
+    <path d="M5 25C13 17 21 13 29 17C37 21 40 25 40 25" 
+          stroke="url(#wave2)" 
+          stroke-width="2.5" 
+          fill="none" 
+          stroke-linecap="round" 
+          opacity="0.8"/>
+    <path d="M2 30C10 22 18 18 26 22C34 26 40 30 40 30" 
+          stroke="url(#wave3)" 
+          stroke-width="2" 
+          fill="none" 
+          stroke-linecap="round" 
+          opacity="0.6"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="60" y="25" font-family="'Inter', 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="url(#textGradient)">
+    AquaMonitor
+  </text>
+  <text x="60" y="42" font-family="'Inter', 'Segoe UI', sans-serif" font-size="10" font-weight="400" fill="#64748B">
+    Surveillance Intelligente
+  </text>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="horizontalBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F8FAFC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E2E8F0;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1D4ED8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#93C5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

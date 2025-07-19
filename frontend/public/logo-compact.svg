@@ -1,0 +1,63 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="20" cy="20" r="18" fill="url(#compactBg)" stroke="url(#compactBorder)" stroke-width="1"/>
+  
+  <!-- Centered wave pattern -->
+  <g transform="translate(8, 12)">
+    <path d="M0 8C4 4 8 2 12 4C16 6 20 8 24 8" 
+          stroke="url(#compactWave1)" 
+          stroke-width="2.5" 
+          fill="none" 
+          stroke-linecap="round"/>
+    <path d="M2 12C6 8 10 6 14 8C18 10 22 12 24 12" 
+          stroke="url(#compactWave2)" 
+          stroke-width="2" 
+          fill="none" 
+          stroke-linecap="round" 
+          opacity="0.8"/>
+    <path d="M0 16C4 12 8 10 12 12C16 14 20 16 24 16" 
+          stroke="url(#compactWave3)" 
+          stroke-width="1.5" 
+          fill="none" 
+          stroke-linecap="round" 
+          opacity="0.6"/>
+  </g>
+  
+  <!-- Initial "A" for extra branding -->
+  <text x="20" y="32" font-family="'Inter', sans-serif" font-size="8" font-weight="700" fill="url(#compactText)" text-anchor="middle">
+    A
+  </text>
+  
+  <!-- Gradients -->
+  <defs>
+    <radialGradient id="compactBg" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#DBEAFE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#BFDBFE;stop-opacity:1" />
+    </radialGradient>
+    
+    <linearGradient id="compactBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:0.5" />
+    </linearGradient>
+    
+    <linearGradient id="compactWave1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="compactWave2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="compactWave3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#93C5FD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="compactText" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

@@ -21,7 +21,6 @@ const translations = {
 
     // Dashboard
     "dashboard.title": "Gestion des Bassins Piscicoles",
-    "dashboard.subtitle": "Surveillance intelligente de vos bassins",
     "dashboard.total.basins": "Bassins totaux",
     "dashboard.active.alerts": "Alertes actives",
     "dashboard.normal.status": "État normal",
@@ -105,7 +104,6 @@ const translations = {
 
     // Dashboard
     "dashboard.title": "إدارة أحواض تربية الأسماك",
-    "dashboard.subtitle": "مراقبة ذكية لأحواضك",
     "dashboard.total.basins": "إجمالي الأحواض",
     "dashboard.active.alerts": "التنبيهات النشطة",
     "dashboard.normal.status": "الحالة الطبيعية",

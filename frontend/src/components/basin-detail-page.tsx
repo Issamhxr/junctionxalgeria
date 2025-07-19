@@ -56,15 +56,15 @@ export function BasinDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "normal":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+        return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700";
       case "warning":
-        return "bg-amber-100 text-amber-700 border-amber-200";
+        return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700";
       case "critical":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700";
       case "offline":
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600";
     }
   };
 
@@ -101,7 +101,8 @@ export function BasinDetailPage() {
       latestReading.temperature < 18 ||
       latestReading.temperature > 30 ||
       latestReading.oxygen < 4.0 ||
-      latestReading.salinity > 35
+      latestReading.salinity > 35 ||
+      (latestReading.turbidity && latestReading.turbidity > 10) // Critical MES level
     ) {
       return "critical";
     }
@@ -113,7 +114,8 @@ export function BasinDetailPage() {
       latestReading.temperature < 20 ||
       latestReading.temperature > 28 ||
       latestReading.oxygen < 5.0 ||
-      latestReading.salinity > 30
+      latestReading.salinity > 30 ||
+      (latestReading.turbidity && latestReading.turbidity > 5) // Warning MES level
     ) {
       return "warning";
     }
@@ -139,10 +141,12 @@ export function BasinDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6 min-h-screen flex items-center justify-center">
+      <div className="p-6 min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement des données du bassin...</p>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-gray-600 dark:text-gray-300" />
+          <p className="text-gray-600 dark:text-gray-300">
+            Chargement des données du bassin...
+          </p>
         </div>
       </div>
     );
@@ -150,10 +154,12 @@ export function BasinDetailPage() {
 
   if (error || !basin) {
     return (
-      <div className="p-6 min-h-screen flex items-center justify-center">
+      <div className="p-6 min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error || "Bassin non trouvé"}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">
+            {error || "Bassin non trouvé"}
+          </p>
           <Link href="/basins">
             <Button>Retour aux Bassins</Button>
           </Link>
@@ -166,9 +172,9 @@ export function BasinDetailPage() {
   const latestReading = basin.sensorData?.[0];
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
+    <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-blue-100">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-blue-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link href="/basins">
@@ -178,8 +184,10 @@ export function BasinDetailPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-4xl font-bold text-gray-800">{basin.name}</h1>
-              <p className="text-gray-600 text-lg">
+              <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100">
+                {basin.name}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 text-lg">
                 {basin.farm.name} - {basin.farm.location}
               </p>
             </div>
@@ -201,27 +209,35 @@ export function BasinDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-2xl p-4">
-            <div className="text-sm text-blue-600 mb-1">Type</div>
-            <div className="text-lg font-semibold text-blue-800 capitalize">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-4">
+            <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">
+              Type
+            </div>
+            <div className="text-lg font-semibold text-blue-800 dark:text-blue-200 capitalize">
               {basin.type}
             </div>
           </div>
-          <div className="bg-green-50 rounded-2xl p-4">
-            <div className="text-sm text-green-600 mb-1">Volume</div>
-            <div className="text-lg font-semibold text-green-800">
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-2xl p-4">
+            <div className="text-sm text-green-600 dark:text-green-400 mb-1">
+              Volume
+            </div>
+            <div className="text-lg font-semibold text-green-800 dark:text-green-200">
               {basin.volume || "N/A"} m³
             </div>
           </div>
-          <div className="bg-purple-50 rounded-2xl p-4">
-            <div className="text-sm text-purple-600 mb-1">Profondeur</div>
-            <div className="text-lg font-semibold text-purple-800">
+          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-2xl p-4">
+            <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">
+              Profondeur
+            </div>
+            <div className="text-lg font-semibold text-purple-800 dark:text-purple-200">
               {basin.depth || "N/A"} m
             </div>
           </div>
-          <div className="bg-orange-50 rounded-2xl p-4">
-            <div className="text-sm text-orange-600 mb-1">Dernière mesure</div>
-            <div className="text-lg font-semibold text-orange-800">
+          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-2xl p-4">
+            <div className="text-sm text-orange-600 dark:text-orange-400 mb-1">
+              Dernière mesure
+            </div>
+            <div className="text-lg font-semibold text-orange-800 dark:text-orange-200">
               {latestReading ? getTimeAgo(latestReading.timestamp) : "N/A"}
             </div>
           </div>
@@ -230,74 +246,101 @@ export function BasinDetailPage() {
 
       {/* Current Parameters */}
       {latestReading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="rounded-3xl border-orange-100 bg-gradient-to-br from-orange-50 to-orange-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <Card className="rounded-3xl border-orange-100 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-orange-700">
+                <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">
                   Température
                 </CardTitle>
-                <Thermometer className="h-6 w-6 text-orange-600" />
+                <Thermometer className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-800 mb-1">
+              <div className="text-3xl font-bold text-orange-800 dark:text-orange-200 mb-1">
                 {latestReading.temperature.toFixed(1)}°C
               </div>
-              <div className="text-xs text-orange-600">Optimal: 18-25°C</div>
+              <div className="text-xs text-orange-600 dark:text-orange-400">
+                Optimal: 18-25°C
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100">
+          <Card className="rounded-3xl border-blue-100 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-blue-700">
+                <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
                   pH
                 </CardTitle>
-                <Droplets className="h-6 w-6 text-blue-600" />
+                <Droplets className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-800 mb-1">
+              <div className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-1">
                 {latestReading.ph.toFixed(1)}
               </div>
-              <div className="text-xs text-blue-600">Optimal: 6.5-8.5</div>
+              <div className="text-xs text-blue-600 dark:text-blue-400">
+                Optimal: 6.5-8.5
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-green-100 bg-gradient-to-br from-green-50 to-green-100">
+          <Card className="rounded-3xl border-green-100 dark:border-green-800 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-green-700">
+                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
                   Oxygène
                 </CardTitle>
-                <Activity className="h-6 w-6 text-green-600" />
+                <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-800 mb-1">
+              <div className="text-3xl font-bold text-green-800 dark:text-green-200 mb-1">
                 {latestReading.oxygen.toFixed(1)}
               </div>
-              <div className="text-xs text-green-600">
+              <div className="text-xs text-green-600 dark:text-green-400">
                 mg/L - Optimal: &gt;5.0
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100">
+          <Card className="rounded-3xl border-teal-100 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/30 dark:to-teal-800/20">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-teal-700">
+                <CardTitle className="text-sm font-medium text-teal-700 dark:text-teal-300">
                   Salinité
                 </CardTitle>
-                <Waves className="h-6 w-6 text-teal-600" />
+                <Waves className="h-6 w-6 text-teal-600 dark:text-teal-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-teal-800 mb-1">
+              <div className="text-3xl font-bold text-teal-800 dark:text-teal-200 mb-1">
                 {latestReading.salinity.toFixed(1)}
               </div>
-              <div className="text-xs text-teal-600">ppt - Selon type</div>
+              <div className="text-xs text-teal-600 dark:text-teal-400">
+                ppt - Selon type
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-yellow-100 dark:border-yellow-800 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                  MES (Turbidité)
+                </CardTitle>
+                <Droplets className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-yellow-800 dark:text-yellow-200 mb-1">
+                {latestReading.turbidity
+                  ? latestReading.turbidity.toFixed(1)
+                  : "N/A"}
+              </div>
+              <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                NTU - Optimal: &lt;5.0
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -305,9 +348,9 @@ export function BasinDetailPage() {
 
       {/* Alerts */}
       {basin.alerts && basin.alerts.length > 0 && (
-        <Card className="rounded-3xl border-red-100 bg-gradient-to-br from-red-50 to-red-100">
+        <Card className="rounded-3xl border-red-100 dark:border-red-800 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-red-800 flex items-center gap-2">
+            <CardTitle className="text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-2">
               <AlertTriangle className="h-6 w-6" />
               Alertes Actives ({basin.alerts.length})
             </CardTitle>
@@ -317,18 +360,18 @@ export function BasinDetailPage() {
               {basin.alerts.map((alert, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-2xl p-4 border border-red-200"
+                  className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-red-200 dark:border-red-700"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-semibold text-red-800">
+                      <div className="font-semibold text-red-800 dark:text-red-200">
                         {alert.message}
                       </div>
-                      <div className="text-sm text-red-600">
+                      <div className="text-sm text-red-600 dark:text-red-400">
                         {alert.type} - Sévérité: {alert.severity}
                       </div>
                     </div>
-                    <Badge className="bg-red-100 text-red-700">
+                    <Badge className="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                       {alert.severity}
                     </Badge>
                   </div>
